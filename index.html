@@ -104,6 +104,28 @@
             font-family: 'DM Sans', 'Noto Sans TC', sans-serif;
         }
 
+        /* Glass-morphism styles */
+        .glass {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-light {
+            background: rgba(45, 45, 45, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-dark {
+            background: rgba(23, 23, 23, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
         .page-transition {
             transition: all 0.3s ease-in-out;
         }
@@ -140,16 +162,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #1E1E1E;
+            background: rgba(30, 30, 30, 0.3);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #4B5563;
+            background: rgba(75, 85, 99, 0.5);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #6B7280;
+            background: rgba(107, 114, 128, 0.7);
         }
 
         .status-indicator {
@@ -200,24 +222,29 @@
         }
 
         .session-link-display {
-            background-color: rgba(23, 73, 136, 0.1);
-            border: 1px solid rgb(23, 73, 136);
+            background: rgba(37, 99, 235, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(37, 99, 235, 0.3);
             padding: 8px 12px;
             font-size: 0.8rem;
             margin-top: 10px;
             word-break: break-all;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
         }
 
         .session-link-display:hover {
-            background-color: rgba(29, 93, 174, 0.2);
+            background: rgba(37, 99, 235, 0.25);
+            border-color: rgba(37, 99, 235, 0.5);
         }
 
         #loadingOverlay {
             position: fixed;
             inset: 0;
-            background-color: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -231,6 +258,88 @@
             opacity: 0;
             pointer-events: none;
         }
+
+        /* Camera switch button */
+        .camera-switch-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .camera-switch-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Data preview modal */
+        .preview-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .preview-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .preview-content {
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editable-cell {
+            cursor: text;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .editable-cell:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .editable-cell:focus {
+            outline: 2px solid rgba(37, 99, 235, 0.5);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .error-row {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid rgb(239, 68, 68);
+        }
+
+        .warning-row {
+            background: rgba(234, 179, 8, 0.1);
+            border-left: 3px solid rgb(234, 179, 8);
+        }
     </style>
 </head>
 
@@ -243,7 +352,7 @@
         <span data-lang-key="loadingSession">正在載入，請稍候...</span>
     </div>
 
-    <nav class="bg-dark-50 border-b border-dark-300">
+    <nav class="glass-dark sticky top-0 z-40">
         <div class="mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
@@ -255,7 +364,7 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <button id="langSwitchBtn"
-                        class="text-sm text-blue-400 hover:text-blue-300 transition duration-150 ease-in-out px-2 py-2 leading-none border border-blue-400/50 rounded">
+                        class="text-sm text-blue-400 hover:text-blue-300 transition duration-150 ease-in-out px-3 py-2 leading-none border border-blue-400/30 rounded-lg glass-light">
                         EN
                     </button>
                 </div>
@@ -265,27 +374,70 @@
     <div id="statusIndicator" class="status-indicator"></div>
 
     <div id="customConfirmModal"
-        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-opacity duration-500 opacity-0 backdrop-blur">
+        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-opacity duration-500 opacity-0 backdrop-blur-sm">
         <div id="confirmBox"
-            class="bg-dark-100 text-gray-200 p-6 rounded-lg shadow-lg max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0">
+            class="glass text-gray-200 p-6 rounded-xl max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0 mx-4">
             <div id="confirmMessage" class="text-sm mb-6"></div>
             <div class="flex justify-end gap-3">
-                <button id="cancelConfirmBtn" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
+                <button id="cancelConfirmBtn" class="px-4 py-2 glass-light rounded-lg hover:bg-gray-600/50 transition-all"
                     data-lang-key="cancel">取消</button>
-                <button id="okConfirmBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                <button id="okConfirmBtn" class="px-4 py-2 bg-blue-600/80 backdrop-blur rounded-lg hover:bg-blue-600 transition-all"
                     data-lang-key="confirm">確認</button>
             </div>
         </div>
     </div>
 
     <div id="customAlertModal"
-        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-all duration-500 opacity-0 backdrop-blur">
-        <div class="bg-dark-100 text-gray-200 p-6 rounded-lg shadow-lg max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-all duration-500 opacity-0 backdrop-blur-sm">
+        <div class="glass text-gray-200 p-6 rounded-xl max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0 mx-4"
             id="alertBox">
             <div id="alertMessage" class="text-sm mb-6"></div>
             <div class="flex justify-end">
-                <button id="okAlertBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                <button id="okAlertBtn" class="px-4 py-2 bg-blue-600/80 backdrop-blur rounded-lg hover:bg-blue-600 transition-all"
                     data-lang-key="confirm">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="csvPreviewModal" class="preview-modal hidden">
+        <div class="preview-content w-full max-w-6xl m-4">
+            <div class="glass p-6 border-b border-gray-700/50">
+                <h2 class="text-xl font-semibold text-gray-100" data-lang-key="csvPreviewTitle">CSV 資料預覽與編輯</h2>
+                <p class="text-sm text-gray-400 mt-2" data-lang-key="csvPreviewDesc">請檢查並編輯資料，確認欄位對應正確，系統會自動清理異常資料</p>
+            </div>
+            <div class="p-6 overflow-auto max-h-[60vh]">
+                <div class="mb-4 glass-light rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-300 mb-3" data-lang-key="fieldMapping">欄位對應</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Name 欄位</label>
+                            <select id="nameFieldSelect" class="w-full px-3 py-2 glass rounded-lg text-sm text-gray-200 border border-gray-600/50">
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">ID 欄位</label>
+                            <select id="idFieldSelect" class="w-full px-3 py-2 glass rounded-lg text-sm text-gray-200 border border-gray-600/50">
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Note 欄位 (選填)</label>
+                            <select id="noteFieldSelect" class="w-full px-3 py-2 glass rounded-lg text-sm text-gray-200 border border-gray-600/50">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="csvPreviewTable" class="overflow-x-auto">
+                </div>
+                <div id="csvWarnings" class="mt-4 hidden">
+                </div>
+            </div>
+            <div class="glass p-4 border-t border-gray-700/50 flex justify-end gap-3">
+                <button id="cancelPreview" class="px-4 py-2 glass-light rounded-lg hover:bg-gray-700/50 transition-all">
+                    取消
+                </button>
+                <button id="confirmImport" class="px-4 py-2 bg-blue-600/80 backdrop-blur rounded-lg hover:bg-blue-600 transition-all">
+                    確認匯入
+                </button>
             </div>
         </div>
     </div>
@@ -294,11 +446,11 @@
     <main class="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div id="mainPage" class="page-transition">
             <div class="max-w-lg mx-auto">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                <div class="glass rounded-xl p-6">
                     <h2 class="text-xl font-semibold text-gray-100 mb-6" data-lang-key="newCheckIn">開始新的簽到</h2>
 
                     <button id="startDirectly"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out"
+                        class="w-full bg-blue-600/80 backdrop-blur hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-xl transition duration-150 ease-in-out"
                         data-lang-key="startDirectly">
                         直接開始
                     </button>
@@ -306,7 +458,7 @@
                     <div class="text-center text-gray-400 my-4" data-lang-key="or">OR</div>
 
                     <div id="dropArea"
-                        class="border-2 border-dashed border-dark-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                        class="border-2 border-dashed border-dark-300/50 rounded-xl p-8 text-center hover:border-blue-500/50 transition-colors cursor-pointer glass-light">
                         <div class="text-gray-400">
                             <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -320,7 +472,7 @@
                     </div>
 
                     <button id="downloadTemplate"
-                        class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out mt-4"
+                        class="w-full glass-light hover:bg-gray-700/50 text-white font-medium py-3 px-4 rounded-xl transition duration-150 ease-in-out mt-4"
                         data-lang-key="downloadTemplate">
                         下載 CSV 模板
                     </button>
@@ -330,7 +482,7 @@
 
         <div id="infoPage" class="hidden page-transition">
             <div class="max-w-2xl mx-auto">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                <div class="glass rounded-xl p-6">
                     <h2 class="text-xl font-semibold text-gray-100 mb-6" data-lang-key="infoSettings">資訊設定</h2>
 
                     <div class="space-y-4">
@@ -339,37 +491,37 @@
                                 <span data-lang-key="eventName">活動名稱</span>
                                 <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="eventName" class="mt-3 mb-6 py-2 px-4 block w-full rounded-md bg-dark-200 border-dark-300 text-gray-100
-                                focus:border-blue-500 focus:ring-blue-500" placeholder="請輸入活動名稱"
+                            <input type="text" id="eventName" class="mt-3 mb-6 py-2 px-4 block w-full rounded-lg glass border-transparent text-gray-100
+                                focus:border-blue-500 focus:ring-blue-500 focus:ring-1" placeholder="請輸入活動名稱"
                                 data-lang-placeholder-key="enterEventName">
                         </div>
 
-                        <div class="border-t border-dark-300 pt-4">
+                        <div class="border-t border-gray-700/50 pt-4">
                             <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="displaySettings">顯示設定</h3>
                             <div class="space-y-3">
                                 <label class="flex items-center">
-                                    <input type="checkbox" id="showCount" class="rounded bg-dark-200 border-dark-300 text-blue-600
+                                    <input type="checkbox" id="showCount" class="rounded bg-dark-200/50 border-dark-300/50 text-blue-600
                                         focus:ring-blue-500 focus:ring-offset-dark-100" checked>
                                     <span class="ml-2 text-gray-300" data-lang-key="showCount">顯示報到人數</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="checkbox" id="showFullName" class="rounded bg-dark-200 border-dark-300 text-blue-600
+                                    <input type="checkbox" id="showFullName" class="rounded bg-dark-200/50 border-dark-300/50 text-blue-600
                                         focus:ring-blue-500 focus:ring-offset-dark-100" checked>
                                     <span class="ml-2 text-gray-300" data-lang-key="showFullName">顯示完整姓名</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="checkbox" id="showFullID" class="rounded bg-dark-200 border-dark-300 text-blue-600
+                                    <input type="checkbox" id="showFullID" class="rounded bg-dark-200/50 border-dark-300/50 text-blue-600
                                         focus:ring-blue-500 focus:ring-offset-dark-100" checked>
                                     <span class="ml-2 text-gray-300" data-lang-key="showFullID">顯示完整 ID</span>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="border-t border-dark-300 pt-4">
+                        <div class="border-t border-gray-700/50 pt-4">
                             <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="cloudSync">雲端同步</h3>
                             <label class="flex items-center">
                                 <input type="checkbox" id="enableFirebaseSync"
-                                    class="rounded bg-dark-200 border-dark-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-dark-100"
+                                    class="rounded bg-dark-200/50 border-dark-300/50 text-blue-600 focus:ring-blue-500 focus:ring-offset-dark-100"
                                     disabled>
                                 <span class="ml-2 text-gray-300" data-lang-key="enableCloudSync">啟用雲端同步</span>
                             </label>
@@ -379,11 +531,11 @@
                     </div>
 
                     <div class="mt-6 flex space-x-4">
-                        <button id="backToMain" class="flex-1 bg-dark-300 hover:bg-dark-400 text-gray-200 font-medium
+                        <button id="backToMain" class="flex-1 glass-light hover:bg-dark-400/50 text-gray-200 font-medium
                             py-2 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="back">
                             返回
                         </button>
-                        <button id="startCheckIn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium
+                        <button id="startCheckIn" class="flex-1 bg-blue-600/80 backdrop-blur hover:bg-blue-600 text-white font-medium
                             py-2 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="startCheckIn">
                             開始簽到
                         </button>
@@ -391,20 +543,20 @@
                 </div>
 
                 <div id="participantsPreview" class="hidden mt-6">
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                    <div class="glass rounded-xl p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-medium text-gray-100" data-lang-key="participantsList">參與者名單預覽</h3>
                             <button id="toggleEncoding"
                                 class="text-sm text-blue-500 hover:text-blue-400 flex items-center group relative"
                                 data-lang-key="encodingIssue">
                                 出現亂碼？
-                                <div class="hidden group-hover:block absolute right-0 top-6 p-2 bg-dark-200 text-gray-300 text-xs rounded-lg shadow-lg z-10"
+                                <div class="hidden group-hover:block absolute right-0 top-6 p-2 glass-light text-gray-300 text-xs rounded-lg z-10"
                                     data-lang-key="switchEncoding">
                                     切換編碼
                                 </div>
                             </button>
                         </div>
-                        <div id="previewParticipantsList" class="divide-y divide-dark-300 max-h-96 overflow-y-auto">
+                        <div id="previewParticipantsList" class="divide-y divide-gray-700/50 max-h-96 overflow-y-auto">
                         </div>
                     </div>
                 </div>
@@ -417,10 +569,15 @@
                     data-lang-key="sessionLinkInfo">已啟用雲端同步，點此複製連結以共用、恢復本次點名階段。</div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                <div class="glass rounded-xl p-6">
                     <h2 class="text-xl font-semibold text-gray-100 mb-4" data-lang-key="qrCodeScan">QR Code 掃描</h2>
-                    <div class="aspect-video bg-dark-200 rounded-lg overflow-hidden">
+                    <div class="aspect-video glass-dark rounded-xl overflow-hidden relative">
                         <video id="checkInVideo" class="w-full h-full object-cover"></video>
+                        <button id="switchCameraCheckIn" class="camera-switch-btn" title="Switch Camera">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="mt-4 text-center">
                         <span id="scanStatus" class="animate-pulse-slow text-gray-100"
@@ -430,7 +587,7 @@
                 </div>
 
                 <div class="space-y-6">
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                    <div class="glass rounded-xl p-6">
                         <h3 id="checkInEventName" class="text-xl font-semibold text-gray-100">
                             活動資訊</h3>
                         <p class="text-gray-400 mt-4">
@@ -442,9 +599,9 @@
                         </p>
                     </div>
 
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                    <div class="glass rounded-xl p-6">
                         <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="lastCheckInInfo">最後簽到資訊</h3>
-                        <dl class="divide-y divide-dark-300">
+                        <dl class="divide-y divide-gray-700/50">
                             <div class="py-3 flex justify-between">
                                 <dt class="text-gray-400" data-lang-key="name">姓名</dt>
                                 <dd id="lastCheckInName" class="font-medium text-gray-200">-</dd>
@@ -465,21 +622,21 @@
                     </div>
 
                     <button id="backToInfo"
-                        class="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg mt-4"
+                        class="w-full glass-light hover:bg-gray-700/50 text-white py-3 px-4 rounded-xl mt-4 transition-all"
                         data-lang-key="backToSettings">
                         返回設定頁
                     </button>
 
-                    <button id="endCheckIn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium
-                        py-3 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="endCheckIn">
+                    <button id="endCheckIn" class="w-full bg-blue-600/80 backdrop-blur hover:bg-blue-600 text-white font-medium
+                        py-3 px-4 rounded-xl transition duration-150 ease-in-out" data-lang-key="endCheckIn">
                         結束簽到並進入簽退
                     </button>
                 </div>
             </div>
 
             <div class="mt-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300">
-                    <div class="border-b border-dark-300">
+                <div class="glass rounded-xl">
+                    <div class="border-b border-gray-700/50">
                         <nav class="flex space-x-8 px-6" aria-label="Tabs">
                             <button
                                 class="tab-button text-blue-500 py-4 px-1 border-b-2 border-blue-500 font-medium text-sm"
@@ -496,11 +653,11 @@
 
                     <div class="p-6">
                         <div id="allParticipants" class="tab-content">
-                            <div id="allParticipantsList" class="divide-y divide-dark-300">
+                            <div id="allParticipantsList" class="divide-y divide-gray-700/50">
                             </div>
                         </div>
                         <div id="checkedInParticipants" class="tab-content hidden">
-                            <div id="checkedInParticipantsList" class="divide-y divide-dark-300">
+                            <div id="checkedInParticipantsList" class="divide-y divide-gray-700/50">
                             </div>
                         </div>
                     </div>
@@ -514,10 +671,15 @@
                     data-lang-key="sessionLinkInfo">已啟用雲端同步，點此複製連結以共用、恢復本次點名階段。</div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                <div class="glass rounded-xl p-6">
                     <h2 class="text-xl font-semibold text-gray-100 mb-4" data-lang-key="qrCodeScan">QR Code 掃描</h2>
-                    <div class="aspect-video bg-dark-200 rounded-lg overflow-hidden">
+                    <div class="aspect-video glass-dark rounded-xl overflow-hidden relative">
                         <video id="checkOutVideo" class="w-full h-full object-cover"></video>
+                        <button id="switchCameraCheckOut" class="camera-switch-btn" title="Switch Camera">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="mt-4 text-center">
                         <span id="checkOutScanStatus" class="animate-pulse-slow text-gray-100"
@@ -527,7 +689,7 @@
                 </div>
 
                 <div class="space-y-6">
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                    <div class="glass rounded-xl p-6">
                         <h3 id="checkOutEventName" class="text-xl font-semibold text-gray-100">活動資訊</h3>
                         <p class="text-gray-400 mt-4">
                             <span id="checkOutCurrentTime"></span>
@@ -538,9 +700,9 @@
                         </p>
                     </div>
 
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
+                    <div class="glass rounded-xl p-6">
                         <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="lastCheckOutInfo">最後簽退資訊</h3>
-                        <dl class="divide-y divide-dark-300">
+                        <dl class="divide-y divide-gray-700/50">
                             <div class="py-3 flex justify-between">
                                 <dt class="text-gray-400" data-lang-key="name">姓名</dt>
                                 <dd id="lastCheckOutName" class="font-medium text-gray-200">-</dd>
@@ -561,21 +723,21 @@
                     </div>
 
                     <button id="backToCheckIn"
-                        class="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg mt-4"
+                        class="w-full glass-light hover:bg-gray-700/50 text-white py-3 px-4 rounded-xl mt-4 transition-all"
                         data-lang-key="backToCheckIn">
                         返回簽到頁
                     </button>
 
-                    <button id="endCheckOut" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium
-                        py-3 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="endCheckOut">
+                    <button id="endCheckOut" class="w-full bg-blue-600/80 backdrop-blur hover:bg-blue-600 text-white font-medium
+                        py-3 px-4 rounded-xl transition duration-150 ease-in-out" data-lang-key="endCheckOut">
                         結束簽退並下載紀錄
                     </button>
                 </div>
             </div>
 
             <div class="mt-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300">
-                    <div class="border-b border-dark-300">
+                <div class="glass rounded-xl">
+                    <div class="border-b border-gray-700/50">
                         <nav class="flex space-x-8 px-6" aria-label="Tabs">
                             <button
                                 class="tab-button text-blue-500 py-4 px-1 border-b-2 border-blue-500 font-medium text-sm"
@@ -597,15 +759,15 @@
 
                     <div class="p-6">
                         <div id="allCheckOutParticipants" class="tab-content">
-                            <div id="allCheckOutParticipantsList" class="divide-y divide-dark-300">
+                            <div id="allCheckOutParticipantsList" class="divide-y divide-gray-700/50">
                             </div>
                         </div>
                         <div id="needCheckOutParticipants" class="tab-content hidden">
-                            <div id="needCheckOutParticipantsList" class="divide-y divide-dark-300">
+                            <div id="needCheckOutParticipantsList" class="divide-y divide-gray-700/50">
                             </div>
                         </div>
                         <div id="checkedOutParticipants" class="tab-content hidden">
-                            <div id="checkedOutParticipantsList" class="divide-y divide-dark-300">
+                            <div id="checkedOutParticipantsList" class="divide-y divide-gray-700/50">
                             </div>
                         </div>
                     </div>
@@ -729,6 +891,11 @@
         let lastCheckedInParticipant = null;
         let lastCheckedOutParticipant = null;
         let hasAskedToResumeData = false;
+        let currentFacingMode = 'environment'; // 'environment' or 'user'
+        let availableCameras = [];
+        let currentCameraIndex = 0;
+        let rawCSVData = null;
+        let csvHeaders = [];
 
         // Firebase variables
         let db = window.firebaseDB;
@@ -968,61 +1135,11 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: async function (results) {
-                    const headers = results.meta.fields;
-                    const hasName = headers.some(h => h.trim().toLowerCase() === 'name');
-                    const hasId = headers.some(h => h.trim().toLowerCase() === 'id');
-
-                    if (!hasName || !hasId) {
-                        showAlertModal('csvFieldsError');
-                        return;
-                    }
-
-                    const nameHeader = headers.find(h => h.trim().toLowerCase() === 'name');
-                    const idHeader = headers.find(h => h.trim().toLowerCase() === 'id');
-                    const noteHeader = headers.find(h => h.trim().toLowerCase() === 'note');
-                    const checkInHeader = headers.find(h => h.trim().toLowerCase() === 'checkintime');
-                    const checkOutHeader = headers.find(h => h.trim().toLowerCase() === 'checkouttime');
-
-                    participants = results.data.map(row => ({
-                        name: row[nameHeader]?.startsWith('name:') ? row[nameHeader].substring(5).trim() : row[nameHeader],
-                        id: row[idHeader]?.startsWith('id:') ? row[idHeader].substring(3).trim() : row[idHeader],
-                        note: noteHeader ? (row[noteHeader] || '') : '',
-                        inCSV: true,
-                        checkInTime: checkInHeader ? (row[checkInHeader] || '') : '',
-                        checkOutTime: checkOutHeader ? (row[checkOutHeader] || '') : ''
-                    }));
-
-                    expectedParticipantsCount = participants.length;
-
-                    if (!hasAskedToResumeData) {
-                        const hasPreviousData = participants.some(p => p.checkInTime || p.checkOutTime);
-                        if (hasPreviousData) {
-                            hasAskedToResumeData = true;
-                            const resume = await showConfirmModal('confirmResumeData');
-                            if (!resume) {
-                                participants.forEach(p => {
-                                    p.checkInTime = '';
-                                    p.checkOutTime = '';
-                                });
-                            } else {
-                                checkInRecords = participants.filter(p => p.checkInTime).map(p => ({
-                                    name: p.name,
-                                    id: p.id,
-                                    note: p.note,
-                                    time: p.checkInTime
-                                }));
-                                checkOutRecords = participants.filter(p => p.checkOutTime).map(p => ({
-                                    name: p.name,
-                                    id: p.id,
-                                    note: p.note,
-                                    time: p.checkOutTime
-                                }));
-                            }
-                        }
-                    }
-
-                    renderParticipantsPreview();
-                    showPage(infoPage);
+                    rawCSVData = results.data;
+                    csvHeaders = results.meta.fields;
+                    
+                    // Show preview modal
+                    showCSVPreviewModal(rawCSVData, csvHeaders);
                 },
                 error: function (error) {
                     console.error('CSV 解析錯誤:', error);
@@ -1030,6 +1147,210 @@
                 }
             });
         }
+
+        function showCSVPreviewModal(data, headers) {
+            const modal = document.getElementById('csvPreviewModal');
+            const nameSelect = document.getElementById('nameFieldSelect');
+            const idSelect = document.getElementById('idFieldSelect');
+            const noteSelect = document.getElementById('noteFieldSelect');
+            
+            // Populate field selects
+            nameSelect.innerHTML = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+            idSelect.innerHTML = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+            noteSelect.innerHTML = `<option value="">（無）</option>` + headers.map(h => `<option value="${h}">${h}</option>`).join('');
+            
+            // Auto-select fields based on name
+            const nameHeader = headers.find(h => h.trim().toLowerCase() === 'name');
+            const idHeader = headers.find(h => h.trim().toLowerCase() === 'id');
+            const noteHeader = headers.find(h => h.trim().toLowerCase() === 'note');
+            
+            if (nameHeader) nameSelect.value = nameHeader;
+            if (idHeader) idSelect.value = idHeader;
+            if (noteHeader) noteSelect.value = noteHeader;
+            
+            // Render preview table
+            renderCSVPreview();
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+        }
+
+        function renderCSVPreview() {
+            const nameField = document.getElementById('nameFieldSelect').value;
+            const idField = document.getElementById('idFieldSelect').value;
+            const noteField = document.getElementById('noteFieldSelect').value;
+            
+            if (!nameField || !idField) {
+                return;
+            }
+            
+            const tableContainer = document.getElementById('csvPreviewTable');
+            const warningsContainer = document.getElementById('csvWarnings');
+            
+            // Validate and clean data
+            const { validData, warnings } = validateAndCleanCSVData(rawCSVData, nameField, idField, noteField);
+            
+            // Display warnings
+            if (warnings.length > 0) {
+                warningsContainer.classList.remove('hidden');
+                warningsContainer.innerHTML = `
+                    <div class="glass-light rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-yellow-400 mb-2">資料警告：</h4>
+                        <ul class="text-xs text-gray-300 space-y-1">
+                            ${warnings.map(w => `<li>• ${w}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                warningsContainer.classList.add('hidden');
+            }
+            
+            // Render table
+            tableContainer.innerHTML = `
+                <table class="w-full text-sm">
+                    <thead class="glass-light sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">行號</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Name</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">Note</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400">狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700/30">
+                        ${validData.map((row, index) => {
+                            const hasError = row.error;
+                            const hasWarning = row.warning;
+                            const rowClass = hasError ? 'error-row' : hasWarning ? 'warning-row' : '';
+                            return `
+                                <tr class="${rowClass}">
+                                    <td class="px-4 py-2 text-gray-400">${index + 1}</td>
+                                    <td class="px-4 py-2">
+                                        <div class="editable-cell" contenteditable="true" data-field="name" data-index="${index}">${row.name || ''}</div>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <div class="editable-cell" contenteditable="true" data-field="id" data-index="${index}">${row.id || ''}</div>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <div class="editable-cell" contenteditable="true" data-field="note" data-index="${index}">${row.note || ''}</div>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <span class="text-xs ${hasError ? 'text-red-400' : hasWarning ? 'text-yellow-400' : 'text-green-400'}">
+                                            ${hasError ? '錯誤' : hasWarning ? '警告' : '正常'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            // Add edit listeners (remove old listeners first to prevent duplicates)
+            document.querySelectorAll('.editable-cell').forEach(cell => {
+                cell.addEventListener('blur', function handleBlur() {
+                    const index = parseInt(this.dataset.index, 10);
+                    const field = this.dataset.field;
+                    validData[index][field] = this.textContent.trim();
+                });
+            });
+            
+            // Store validated data
+            window.validatedCSVData = validData;
+        }
+
+        function validateAndCleanCSVData(data, nameField, idField, noteField) {
+            const validData = [];
+            const warnings = [];
+            const seenIds = new Set();
+            
+            data.forEach((row, index) => {
+                const cleanedRow = {
+                    name: cleanValue(row[nameField]),
+                    id: cleanValue(row[idField]),
+                    note: noteField ? cleanValue(row[noteField]) : '',
+                    error: false,
+                    warning: false
+                };
+                
+                // Check for empty required fields
+                if (!cleanedRow.name || !cleanedRow.id) {
+                    cleanedRow.error = true;
+                    warnings.push(`行 ${index + 1}: 缺少必要欄位 (Name 或 ID)`);
+                }
+                
+                // Check for duplicate IDs
+                if (cleanedRow.id && seenIds.has(cleanedRow.id)) {
+                    cleanedRow.warning = true;
+                    warnings.push(`行 ${index + 1}: 重複的 ID "${cleanedRow.id}"`);
+                } else if (cleanedRow.id) {
+                    seenIds.add(cleanedRow.id);
+                }
+                
+                validData.push(cleanedRow);
+            });
+            
+            return { validData, warnings };
+        }
+
+        function cleanValue(value) {
+            if (!value) return '';
+            
+            // Convert to string and trim
+            let cleaned = String(value).trim();
+            
+            // Remove common prefixes
+            if (cleaned.toLowerCase().startsWith('name:')) {
+                cleaned = cleaned.substring(5).trim();
+            }
+            if (cleaned.toLowerCase().startsWith('id:')) {
+                cleaned = cleaned.substring(3).trim();
+            }
+            
+            // Keep allowed special characters: @ . - _
+            // Remove other problematic characters
+            cleaned = cleaned.replace(/[^\w\s@.\-_\u4e00-\u9fa5]/g, '');
+            
+            return cleaned;
+        }
+
+        // Field select change listeners
+        document.getElementById('nameFieldSelect')?.addEventListener('change', renderCSVPreview);
+        document.getElementById('idFieldSelect')?.addEventListener('change', renderCSVPreview);
+        document.getElementById('noteFieldSelect')?.addEventListener('change', renderCSVPreview);
+
+        // Preview modal buttons
+        document.getElementById('cancelPreview')?.addEventListener('click', () => {
+            const modal = document.getElementById('csvPreviewModal');
+            modal.classList.remove('active');
+            modal.classList.add('hidden');
+            rawCSVData = null;
+            csvHeaders = [];
+        });
+
+        document.getElementById('confirmImport')?.addEventListener('click', async () => {
+            const validData = window.validatedCSVData || [];
+            
+            // Filter out error rows and map to participants
+            participants = validData
+                .filter(row => !row.error && row.name && row.id)
+                .map(row => ({
+                    name: row.name,
+                    id: row.id,
+                    note: row.note || '',
+                    inCSV: true,
+                    checkInTime: '',
+                    checkOutTime: ''
+                }));
+            
+            expectedParticipantsCount = participants.length;
+            
+            const modal = document.getElementById('csvPreviewModal');
+            modal.classList.remove('active');
+            modal.classList.add('hidden');
+            renderParticipantsPreview();
+            showPage(infoPage);
+        });
 
         function renderParticipantsPreview() {
             const previewList = document.getElementById('previewParticipantsList');
@@ -1163,6 +1484,53 @@
             }
         }
 
+        // Get available cameras
+        async function getAvailableCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                availableCameras = devices.filter(device => device.kind === 'videoinput');
+                return availableCameras;
+            } catch (error) {
+                console.error('Error enumerating devices:', error);
+                return [];
+            }
+        }
+
+        // Switch camera
+        async function switchCamera(mode) {
+            try {
+                if (mode === 'checkIn') {
+                    stopCheckInCamera();
+                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                    await startCheckInCamera();
+                } else {
+                    stopCheckOutCamera();
+                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                    await startCheckOutCamera();
+                }
+            } catch (error) {
+                console.error('Camera switch error:', error);
+                updateScanStatusText('cameraError', mode, error.message);
+            }
+        }
+
+        // Add camera switch button listeners
+        document.getElementById('switchCameraCheckIn')?.addEventListener('click', async () => {
+            try {
+                await switchCamera('checkIn');
+            } catch (error) {
+                console.error('Error switching camera:', error);
+            }
+        });
+
+        document.getElementById('switchCameraCheckOut')?.addEventListener('click', async () => {
+            try {
+                await switchCamera('checkOut');
+            } catch (error) {
+                console.error('Error switching camera:', error);
+            }
+        });
+
         function startCheckInCamera() {
             const video = document.getElementById('checkInVideo');
             updateScanStatusText('cameraInitializing', 'checkIn');
@@ -1174,7 +1542,7 @@
 
             navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: 'environment',
+                    facingMode: currentFacingMode,
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 }
@@ -1211,7 +1579,7 @@
 
             navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: 'environment',
+                    facingMode: currentFacingMode,
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 }
@@ -1589,7 +1957,7 @@
                         ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
                     </div>
                     <div class="flex items-center flex-shrink-0 ml-2">
-                        <span class="px-2 py-1 text-xs rounded ${participant.checkInTime ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}">
+                        <span class="px-2 py-1 text-xs rounded-lg ${participant.checkInTime ? 'glass-light text-blue-400 border border-blue-400/30' : 'glass-light text-gray-400 border border-gray-400/20'}">
                             ${participant.checkInTime ? languages[currentLang]['statusCheckedIn'] : languages[currentLang]['statusNotCheckedIn']}
                         </span>
                     </div>
@@ -1633,7 +2001,7 @@
                          ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
                     </div>
                     <div class="flex items-center flex-shrink-0 ml-2">
-                        <span class="px-2 py-1 text-xs rounded ${getStatusClass(participant)}">
+                        <span class="px-2 py-1 text-xs rounded-lg ${getStatusClass(participant)}">
                             ${getStatusText(participant)}
                         </span>
                     </div>
@@ -1678,9 +2046,9 @@
         }
 
         function getStatusClass(participant) {
-            if (!participant.checkInTime) return 'bg-gray-500/20 text-gray-400';
-            if (participant.checkOutTime) return 'bg-green-500/20 text-green-400';
-            return 'bg-yellow-500/20 text-yellow-400';
+            if (!participant.checkInTime) return 'glass-light text-gray-400 border border-gray-400/20';
+            if (participant.checkOutTime) return 'glass-light text-green-400 border border-green-400/30';
+            return 'glass-light text-yellow-400 border border-yellow-400/30';
         }
 
         function getStatusText(participant) {

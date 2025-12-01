@@ -109,6 +109,10 @@ const languages = {
         footerGenerator: '通行碼郵件產生器',
         footerGuide: '使用指南',
         footerTerms: '服務條款',
+        csvPreviewTitle: 'CSV 資料預覽與編輯',
+        csvPreviewDesc: '請檢查並編輯資料，確認欄位對應正確，系統會自動清理異常資料',
+        fieldMapping: '欄位對應',
+        fileEncodingError: '無法識別檔案編碼格式',
     },
     'en': {
         newCheckIn: 'Start New Check-in',
@@ -220,5 +224,9 @@ const languages = {
         footerGenerator: 'QR Email Generator',
         footerGuide: 'User Guide',
         footerTerms: 'Terms of Use',
+        csvPreviewTitle: 'CSV Data Preview & Edit',
+        csvPreviewDesc: 'Please check and edit data, confirm field mapping is correct, system will auto-clean abnormal data',
+        fieldMapping: 'Field Mapping',
+        fileEncodingError: 'Unable to recognize file encoding',
     }
 };
