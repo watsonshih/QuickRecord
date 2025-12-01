@@ -1246,10 +1246,10 @@
                 </table>
             `;
             
-            // Add edit listeners
+            // Add edit listeners (remove old listeners first to prevent duplicates)
             document.querySelectorAll('.editable-cell').forEach(cell => {
-                cell.addEventListener('blur', function() {
-                    const index = parseInt(this.dataset.index);
+                cell.addEventListener('blur', function handleBlur() {
+                    const index = parseInt(this.dataset.index, 10);
                     const field = this.dataset.field;
                     validData[index][field] = this.textContent.trim();
                 });
@@ -1498,24 +1498,37 @@
 
         // Switch camera
         async function switchCamera(mode) {
-            if (mode === 'checkIn') {
-                stopCheckInCamera();
-                currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-                await startCheckInCamera();
-            } else {
-                stopCheckOutCamera();
-                currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-                await startCheckOutCamera();
+            try {
+                if (mode === 'checkIn') {
+                    stopCheckInCamera();
+                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                    await startCheckInCamera();
+                } else {
+                    stopCheckOutCamera();
+                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                    await startCheckOutCamera();
+                }
+            } catch (error) {
+                console.error('Camera switch error:', error);
+                updateScanStatusText('cameraError', mode, error.message);
             }
         }
 
         // Add camera switch button listeners
-        document.getElementById('switchCameraCheckIn')?.addEventListener('click', () => {
-            switchCamera('checkIn');
+        document.getElementById('switchCameraCheckIn')?.addEventListener('click', async () => {
+            try {
+                await switchCamera('checkIn');
+            } catch (error) {
+                console.error('Error switching camera:', error);
+            }
         });
 
-        document.getElementById('switchCameraCheckOut')?.addEventListener('click', () => {
-            switchCamera('checkOut');
+        document.getElementById('switchCameraCheckOut')?.addEventListener('click', async () => {
+            try {
+                await switchCamera('checkOut');
+            } catch (error) {
+                console.error('Error switching camera:', error);
+            }
         });
 
         function startCheckInCamera() {
