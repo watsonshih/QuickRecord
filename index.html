@@ -399,7 +399,7 @@
         </div>
     </div>
 
-    <div id="csvPreviewModal" class="preview-modal">
+    <div id="csvPreviewModal" class="preview-modal hidden">
         <div class="preview-content w-full max-w-6xl m-4">
             <div class="glass p-6 border-b border-gray-700/50">
                 <h2 class="text-xl font-semibold text-gray-100" data-lang-key="csvPreviewTitle">CSV 資料預覽與編輯</h2>
@@ -1171,6 +1171,7 @@
             // Render preview table
             renderCSVPreview();
             
+            modal.classList.remove('hidden');
             modal.classList.add('active');
         }
 
@@ -1320,7 +1321,9 @@
 
         // Preview modal buttons
         document.getElementById('cancelPreview')?.addEventListener('click', () => {
-            document.getElementById('csvPreviewModal').classList.remove('active');
+            const modal = document.getElementById('csvPreviewModal');
+            modal.classList.remove('active');
+            modal.classList.add('hidden');
             rawCSVData = null;
             csvHeaders = [];
         });
@@ -1342,7 +1345,9 @@
             
             expectedParticipantsCount = participants.length;
             
-            document.getElementById('csvPreviewModal').classList.remove('active');
+            const modal = document.getElementById('csvPreviewModal');
+            modal.classList.remove('active');
+            modal.classList.add('hidden');
             renderParticipantsPreview();
             showPage(infoPage);
         });
