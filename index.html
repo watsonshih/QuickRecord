@@ -1097,21 +1097,21 @@
                 <div class="field-mapping">
                     <label>Name:</label>
                     <select id="nameFieldSelect">
-                        <option value="">-- ${languages[currentLang]['cancel']} --</option>
+                        <option value="">${languages[currentLang]['selectField']}</option>
                         ${headers.map(h => `<option value="${h}" ${h === fieldMappings.name ? 'selected' : ''}>${h}</option>`).join('')}
                     </select>
                 </div>
                 <div class="field-mapping">
                     <label>ID:</label>
                     <select id="idFieldSelect">
-                        <option value="">-- ${languages[currentLang]['cancel']} --</option>
+                        <option value="">${languages[currentLang]['selectField']}</option>
                         ${headers.map(h => `<option value="${h}" ${h === fieldMappings.id ? 'selected' : ''}>${h}</option>`).join('')}
                     </select>
                 </div>
                 <div class="field-mapping">
                     <label>Note:</label>
                     <select id="noteFieldSelect">
-                        <option value="">-- ${languages[currentLang]['cancel']} --</option>
+                        <option value="">${languages[currentLang]['selectField']}</option>
                         ${headers.map(h => `<option value="${h}" ${h === fieldMappings.note ? 'selected' : ''}>${h}</option>`).join('')}
                     </select>
                 </div>
@@ -1145,6 +1145,12 @@
             if (!str) return false;
             // Firebase doesn't allow . # $ / [ ] @ in keys
             return /[\.\#\$\/\[\]@]/.test(str);
+        }
+
+        function removeFieldPrefix(value, fieldType) {
+            if (!value) return value;
+            const prefix = `${fieldType}:`;
+            return value.startsWith(prefix) ? value.substring(prefix.length).trim() : value.trim();
         }
 
         function renderCSVPreviewTable() {
@@ -1213,7 +1219,7 @@
 
             // Check if required fields are mapped
             if (!nameField || !idField) {
-                warnings.push(languages[currentLang]['csvFieldsError']);
+                warnings.push(languages[currentLang]['fieldMappingRequired']);
                 return { warnings, validRows: Array(data.length).fill(false), validCount: 0, invalidCount: data.length };
             }
 
@@ -1273,12 +1279,8 @@
                 .map((row, index) => {
                     if (!validationResults.validRows[index]) return null;
 
-                    const name = row[fieldMappings.name]?.startsWith('name:') 
-                        ? row[fieldMappings.name].substring(5).trim() 
-                        : row[fieldMappings.name]?.trim();
-                    const id = row[fieldMappings.id]?.startsWith('id:') 
-                        ? row[fieldMappings.id].substring(3).trim() 
-                        : row[fieldMappings.id]?.trim();
+                    const name = removeFieldPrefix(row[fieldMappings.name], 'name');
+                    const id = removeFieldPrefix(row[fieldMappings.id], 'id');
                     const note = fieldMappings.note ? (row[fieldMappings.note] || '') : '';
                     const checkInTime = fieldMappings.checkInTime ? (row[fieldMappings.checkInTime] || '') : '';
                     const checkOutTime = fieldMappings.checkOutTime ? (row[fieldMappings.checkOutTime] || '') : '';
