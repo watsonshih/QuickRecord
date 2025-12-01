@@ -43,6 +43,9 @@
                             300: '#404040',
                             400: '#525252',
                         }
+                    },
+                    fontFamily: {
+                        sans: ['DM Sans', 'Noto Sans TC', 'sans-serif'],
                     }
                 }
             }
@@ -69,13 +72,12 @@
 
             try {
                 const app = initializeApp(firebaseConfig);
+                self.FIREBASE_APPCHECK_DEBUG_TOKEN = false;
                 const appCheck = initializeAppCheck(app, {
                     provider: new ReCaptchaV3Provider('6Lc4BRwrAAAAAIBUTWfQ2qXUM1USKJ5UonT-99bf'),
                     isTokenAutoRefreshEnabled: true
                 });
-
                 await getToken(appCheck);
-
                 const database = getDatabase(app);
                 return database;
             } catch (error) {
@@ -84,7 +86,6 @@
         }
 
         window.firebaseInitPromise = initializeFirebase();
-
         window.fbRef = ref;
         window.fbSet = set;
         window.fbGet = get;
@@ -94,545 +95,669 @@
         window.fbOnValue = onValue;
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;600&family=Noto+Sans+TC:wght@350;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
 
-        * {
-            font-family: 'DM Sans', 'Noto Sans TC', sans-serif;
+        :root {
+            --bg-color: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.15);
+            --text-primary: #E5E5E5;
+            --text-secondary: #A3A3A3;
+            --accent-color: #3B82F6;
+            --success-color: #10B981;
+            --warning-color: #F59E0B;
+            --error-color: #EF4444;
         }
 
-        html[data-lang="en"] * {
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             font-family: 'DM Sans', 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* Modern Glassmorphism - No Shadows, No Gradients */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--glass-highlight);
+        }
+
+        .glass-button:active {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animations */
         .page-transition {
-            transition: all 0.3s ease-in-out;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .page-enter {
             opacity: 0;
-            transform: translateY(20px);
+            transform: scale(0.98);
         }
 
         .page-enter-active {
             opacity: 1;
-            transform: translateY(0);
+            transform: scale(1);
         }
 
-        .animate-pulse-slow {
-            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        /* Status Indicator - Border Flash */
+        .status-flash {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 100;
+            border: 0px solid transparent;
+            transition: border-width 0.1s ease-out, border-color 0.1s ease-out;
         }
 
-        @keyframes pulse {
+        .status-flash.success {
+            border: 8px solid var(--success-color);
+        }
 
-            0%,
-            100% {
+        .status-flash.warning {
+            border: 8px solid var(--warning-color);
+        }
+
+        .status-flash.error {
+            border: 8px solid var(--error-color);
+        }
+
+        /* Utility */
+        .text-accent {
+            color: var(--accent-color);
+        }
+
+        .border-accent {
+            border-color: var(--accent-color);
+        }
+
+        .bg-accent {
+            background-color: var(--accent-color);
+        }
+
+        /* Specific Components */
+        .camera-viewfinder {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .camera-viewfinder::after {
+            content: '';
+            position: absolute;
+            inset: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-color);
+            opacity: 0.7;
+            animation: scan 2s linear infinite;
+            box-shadow: none;
+            /* Explicitly no shadow */
+        }
+
+        @keyframes scan {
+            0% {
+                top: 20px;
+                opacity: 0;
+            }
+
+            10% {
                 opacity: 1;
             }
 
-            50% {
-                opacity: 0.5;
+            90% {
+                opacity: 1;
             }
-        }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1E1E1E;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #4B5563;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6B7280;
-        }
-
-        .status-indicator {
-            position: absolute;
-            top: 64px;
-            left: 0;
-            right: 0;
-            height: 0.5em;
-            background-color: rgba(209, 213, 219, 0.5);
-            z-index: 50;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .status-indicator.visible {
-            opacity: 1;
-        }
-
-        .status-indicator.breathing {
-            animation: breathing 2s ease-in-out infinite;
-        }
-
-        .status-indicator.success {
-            background-color: rgb(34, 197, 94);
-            animation: none;
-        }
-
-        .status-indicator.warning {
-            background-color: rgb(234, 179, 8);
-            animation: none;
-        }
-
-        .status-indicator.error {
-            background-color: rgb(239, 68, 68);
-            animation: none;
-        }
-
-        @keyframes breathing {
-
-            0%,
             100% {
-                background-color: rgba(209, 213, 219, 0.2);
-            }
-
-            50% {
-                background-color: rgba(209, 213, 219, 1);
+                top: calc(100% - 20px);
+                opacity: 0;
             }
         }
 
-        .session-link-display {
-            background-color: rgba(23, 73, 136, 0.1);
-            border: 1px solid rgb(23, 73, 136);
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            margin-top: 10px;
-            word-break: break-all;
-            cursor: pointer;
-            transition: background-color 0.2s;
+        .result-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .session-link-display:hover {
-            background-color: rgba(29, 93, 174, 0.2);
+        .result-card.highlight {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
-        #loadingOverlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            color: white;
-            font-size: 1.2em;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        #loadingOverlay.hidden {
-            opacity: 0;
-            pointer-events: none;
+        /* Modal */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
         }
     </style>
 </head>
 
-<body class="bg-dark-100">
+<body>
     <audio id="successAudio" src="bgm/success.mp3" preload="auto"></audio>
     <audio id="warningAudio" src="bgm/warning.mp3" preload="auto"></audio>
     <audio id="errorAudio" src="bgm/error.mp3" preload="auto"></audio>
 
-    <div id="loadingOverlay" class="hidden">
-        <span data-lang-key="loadingSession">正在載入，請稍候...</span>
+    <div id="statusFlash" class="status-flash"></div>
+
+    <div id="loadingOverlay"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md hidden transition-opacity duration-300">
+        <div class="text-center">
+            <div class="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-4">
+            </div>
+            <span class="text-gray-300 tracking-wider" data-lang-key="loadingSession">正在載入...</span>
+        </div>
     </div>
 
-    <nav class="bg-dark-50 border-b border-dark-300">
-        <div class="mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="https://watsonshih.github.io/QuickRecord/" target="_blank" class="flex items-center">
-                        <img src="https://watsonshih.github.io/QuickRecord/pic/icon.png" alt="QuickRecord"
-                            class="h-8 w-8 mr-2">
-                        <h1 class="text-xl font-semibold text-gray-100">QuickRecord</h1>
-                    </a>
+    <!-- Navbar -->
+    <nav class="fixed top-4 left-0 right-0 z-50 px-4">
+        <div class="max-w-7xl mx-auto glass rounded-2xl px-3 py-2 flex justify-between items-center">
+            <a href="https://watsonshih.github.io/QuickRecord/" target="_blank" class="flex items-center gap-3 group">
+                <div
+                    class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/0 group-hover:border-blue-500/50 transition-colors">
+                    <img src="https://watsonshih.github.io/QuickRecord/pic/icon.png" alt="QuickRecord" class="w-5 h-5">
                 </div>
-                <div class="flex items-center space-x-4">
-                    <button id="langSwitchBtn"
-                        class="text-sm text-blue-400 hover:text-blue-300 transition duration-150 ease-in-out px-2 py-2 leading-none border border-blue-400/50 rounded">
-                        EN
-                    </button>
-                </div>
-            </div>
+                <h1 class="text-lg font-medium tracking-wide text-gray-100">QuickRecord</h1>
+            </a>
+            <button id="langSwitchBtn"
+                class="glass-button px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white tracking-wider uppercase">
+                EN
+            </button>
         </div>
     </nav>
-    <div id="statusIndicator" class="status-indicator"></div>
 
+    <!-- Modals -->
     <div id="customConfirmModal"
-        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-opacity duration-500 opacity-0 backdrop-blur">
+        class="fixed inset-0 modal-backdrop hidden z-[100] flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="confirmBox"
-            class="bg-dark-100 text-gray-200 p-6 rounded-lg shadow-lg max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0">
-            <div id="confirmMessage" class="text-sm mb-6"></div>
-            <div class="flex justify-end gap-3">
-                <button id="cancelConfirmBtn" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
+            class="glass-panel p-8 rounded-2xl max-w-sm w-full mx-4 transform scale-95 transition-all duration-300">
+            <div id="confirmMessage" class="text-gray-200 text-lg mb-8 text-center leading-relaxed"></div>
+            <div class="flex gap-4">
+                <button id="cancelConfirmBtn" class="flex-1 glass-button py-3 rounded-xl text-gray-400 hover:text-white"
                     data-lang-key="cancel">取消</button>
-                <button id="okConfirmBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                <button id="okConfirmBtn"
+                    class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl transition-colors"
                     data-lang-key="confirm">確認</button>
             </div>
         </div>
     </div>
 
     <div id="customAlertModal"
-        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-all duration-500 opacity-0 backdrop-blur">
-        <div class="bg-dark-100 text-gray-200 p-6 rounded-lg shadow-lg max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0"
-            id="alertBox">
-            <div id="alertMessage" class="text-sm mb-6"></div>
-            <div class="flex justify-end">
-                <button id="okAlertBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-                    data-lang-key="confirm">確認</button>
+        class="fixed inset-0 modal-backdrop hidden z-[100] flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div id="alertBox"
+            class="glass-panel p-8 rounded-2xl max-w-sm w-full mx-4 transform scale-95 transition-all duration-300">
+            <div id="alertMessage" class="text-gray-200 text-lg mb-8 text-center leading-relaxed"></div>
+            <button id="okAlertBtn"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl transition-colors"
+                data-lang-key="confirm">確認</button>
+        </div>
+    </div>
+
+    <div id="csvPreviewModal"
+        class="fixed inset-0 modal-backdrop hidden z-[90] flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-5xl m-4 rounded-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-semibold text-white" data-lang-key="csvPreviewTitle">CSV 資料預覽</h2>
+                    <p class="text-sm text-gray-400 mt-1" data-lang-key="csvPreviewDesc">請確認欄位對應</p>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-500 uppercase tracking-wider"
+                            data-lang-key="nameFieldLabel">Name 欄位</label>
+                        <select id="nameFieldSelect" class="w-full glass-input px-4 py-2.5 rounded-xl text-sm"></select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-500 uppercase tracking-wider" data-lang-key="idFieldLabel">ID
+                            欄位</label>
+                        <select id="idFieldSelect" class="w-full glass-input px-4 py-2.5 rounded-xl text-sm"></select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-gray-500 uppercase tracking-wider"
+                            data-lang-key="noteFieldLabel">Note 欄位</label>
+                        <select id="noteFieldSelect" class="w-full glass-input px-4 py-2.5 rounded-xl text-sm"></select>
+                    </div>
+                </div>
+
+                <div id="csvWarnings" class="mb-6 hidden"></div>
+
+                <div class="glass rounded-xl overflow-hidden">
+                    <div id="csvPreviewTable" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-white/10 flex justify-end gap-4">
+                <button id="cancelPreview" class="glass-button px-6 py-2.5 rounded-xl text-gray-300 hover:text-white"
+                    data-lang-key="cancel">取消</button>
+                <button id="confirmImport"
+                    class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl transition-colors"
+                    data-lang-key="confirmImport">確認匯入</button>
             </div>
         </div>
     </div>
 
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
 
-    <main class="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="mainPage" class="page-transition">
-            <div class="max-w-lg mx-auto">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                    <h2 class="text-xl font-semibold text-gray-100 mb-6" data-lang-key="newCheckIn">開始新的簽到</h2>
-
+        <!-- Page: Main -->
+        <div id="mainPage" class="page-transition flex-1 flex flex-col justify-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
+                <!-- Card 1: Start New -->
+                <div
+                    class="glass p-8 rounded-3xl flex flex-col items-center text-center hover:border-blue-500/30 transition-colors group">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:bg-blue-500/20 transition-colors">
+                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-white mb-3" data-lang-key="newCheckIn">開始新的簽到</h2>
+                    <p class="text-gray-400 mb-8 text-sm" data-lang-key="newCheckInDesc">建立一個全新的簽到活動，稍後可手動輸入參與者。</p>
                     <button id="startDirectly"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out"
-                        data-lang-key="startDirectly">
-                        直接開始
-                    </button>
+                        class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all"
+                        data-lang-key="startDirectly">直接開始</button>
+                </div>
 
-                    <div class="text-center text-gray-400 my-4" data-lang-key="or">OR</div>
+                <!-- Card 2: Upload CSV -->
+                <div
+                    class="glass p-8 rounded-3xl flex flex-col items-center text-center hover:border-purple-500/30 transition-colors group relative overflow-hidden">
+                    <input type="file" id="fileInput"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".csv">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:bg-purple-500/20 transition-colors">
+                        <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-white mb-3" data-lang-key="dropCSV">預先匯入參與名單</h2>
+                    <p class="text-gray-400 mb-8 text-sm" data-lang-key="dropCSVDesc">使用 CSV 匯入參與者名單，可直接拖拽檔案於此。</p>
 
-                    <div id="dropArea"
-                        class="border-2 border-dashed border-dark-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
-                        <div class="text-gray-400">
-                            <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <p class="mt-4" data-lang-key="dropCSV">拖曳上傳 CSV，預先匯入參與名單</p>
-                            <p class="text-sm text-gray-500 mt-2" data-lang-key="csvRequirement">（CSV 需包含 Name、ID、Note
-                                欄位）</p>
-                        </div>
-                        <input type="file" id="fileInput" class="hidden" accept=".csv">
+                    <div id="dropArea" class="w-full relative">
+                        <button
+                            class="w-full py-4 rounded-xl glass-button text-white font-medium hover:bg-white/5 transition-all"
+                            data-lang-key="selectCSVFile">選擇
+                            CSV 檔案</button>
                     </div>
 
                     <button id="downloadTemplate"
-                        class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition duration-150 ease-in-out mt-4"
+                        class="mt-4 text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1 relative z-20"
                         data-lang-key="downloadTemplate">
-                        下載 CSV 模板
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        下載範本
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="infoPage" class="hidden page-transition">
-            <div class="max-w-2xl mx-auto">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                    <h2 class="text-xl font-semibold text-gray-100 mb-6" data-lang-key="infoSettings">資訊設定</h2>
+        <!-- Page: Info Settings -->
+        <div id="infoPage" class="hidden page-transition max-w-2xl mx-auto w-full">
+            <div class="glass rounded-3xl p-8">
+                <h2 class="text-2xl font-semibold text-white mb-8 flex items-center gap-3">
+                    <span class="w-1 h-8 bg-blue-500 rounded-full"></span>
+                    <span data-lang-key="infoSettings">活動設定</span>
+                </h2>
 
-                    <div class="space-y-4">
-                        <div>
-                            <label for="eventName" class="block text-sm font-medium text-gray-300">
-                                <span data-lang-key="eventName">活動名稱</span>
-                                <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" id="eventName" class="mt-3 mb-6 py-2 px-4 block w-full rounded-md bg-dark-200 border-dark-300 text-gray-100
-                                focus:border-blue-500 focus:ring-blue-500" placeholder="請輸入活動名稱"
-                                data-lang-placeholder-key="enterEventName">
-                        </div>
-
-                        <div class="border-t border-dark-300 pt-4">
-                            <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="displaySettings">顯示設定</h3>
-                            <div class="space-y-3">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="showCount" class="rounded bg-dark-200 border-dark-300 text-blue-600
-                                        focus:ring-blue-500 focus:ring-offset-dark-100" checked>
-                                    <span class="ml-2 text-gray-300" data-lang-key="showCount">顯示報到人數</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="showFullName" class="rounded bg-dark-200 border-dark-300 text-blue-600
-                                        focus:ring-blue-500 focus:ring-offset-dark-100" checked>
-                                    <span class="ml-2 text-gray-300" data-lang-key="showFullName">顯示完整姓名</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="showFullID" class="rounded bg-dark-200 border-dark-300 text-blue-600
-                                        focus:ring-blue-500 focus:ring-offset-dark-100" checked>
-                                    <span class="ml-2 text-gray-300" data-lang-key="showFullID">顯示完整 ID</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-dark-300 pt-4">
-                            <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="cloudSync">雲端同步</h3>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="enableFirebaseSync"
-                                    class="rounded bg-dark-200 border-dark-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-dark-100"
-                                    disabled>
-                                <span class="ml-2 text-gray-300" data-lang-key="enableCloudSync">啟用雲端同步</span>
-                            </label>
-                            <p class="text-xs text-gray-500 mt-2" data-lang-key="cloudSyncNote">
-                                注意：資料僅會暫時保存，可能隨時被清除，請儘速下載。</p>
-                        </div>
+                <div class="space-y-8">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2"
+                            data-lang-key="eventName">活動名稱</label>
+                        <input type="text" id="eventName"
+                            class="w-full glass-input px-5 py-3 rounded-xl text-lg text-white placeholder-gray-600"
+                            placeholder="輸入活動名稱..." data-lang-placeholder-key="enterEventName">
                     </div>
 
-                    <div class="mt-6 flex space-x-4">
-                        <button id="backToMain" class="flex-1 bg-dark-300 hover:bg-dark-400 text-gray-200 font-medium
-                            py-2 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="back">
-                            返回
-                        </button>
-                        <button id="startCheckIn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium
-                            py-2 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="startCheckIn">
-                            開始簽到
-                        </button>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <label
+                            class="glass-button p-4 rounded-xl flex items-center justify-center gap-3 cursor-pointer group">
+                            <input type="checkbox" id="showCount"
+                                class="w-4 h-4 rounded border-gray-600 bg-transparent text-blue-600 focus:ring-0 focus:ring-offset-0"
+                                checked>
+                            <span class="text-sm text-gray-300 group-hover:text-white"
+                                data-lang-key="showCount">顯示人數</span>
+                        </label>
+                        <label
+                            class="glass-button p-4 rounded-xl flex items-center justify-center gap-3 cursor-pointer group">
+                            <input type="checkbox" id="showFullName"
+                                class="w-4 h-4 rounded border-gray-600 bg-transparent text-blue-600 focus:ring-0 focus:ring-offset-0"
+                                checked>
+                            <span class="text-sm text-gray-300 group-hover:text-white"
+                                data-lang-key="showFullName">顯示全名</span>
+                        </label>
+                        <label
+                            class="glass-button p-4 rounded-xl flex items-center justify-center gap-3 cursor-pointer group">
+                            <input type="checkbox" id="showFullID"
+                                class="w-4 h-4 rounded border-gray-600 bg-transparent text-blue-600 focus:ring-0 focus:ring-offset-0"
+                                checked>
+                            <span class="text-sm text-gray-300 group-hover:text-white" data-lang-key="showFullID">顯示全
+                                ID</span>
+                        </label>
                     </div>
-                </div>
 
-                <div id="participantsPreview" class="hidden mt-6">
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-100" data-lang-key="participantsList">參與者名單預覽</h3>
-                            <button id="toggleEncoding"
-                                class="text-sm text-blue-500 hover:text-blue-400 flex items-center group relative"
-                                data-lang-key="encodingIssue">
-                                出現亂碼？
-                                <div class="hidden group-hover:block absolute right-0 top-6 p-2 bg-dark-200 text-gray-300 text-xs rounded-lg shadow-lg z-10"
-                                    data-lang-key="switchEncoding">
-                                    切換編碼
+                    <div class="glass p-5 rounded-xl border-blue-500/50">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-base font-medium text-white" data-lang-key="cloudSync">雲端同步</h3>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="enableFirebaseSync" class="sr-only peer" disabled>
+                                <div
+                                    class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
                                 </div>
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500" data-lang-key="cloudSyncNote">資料僅暫存，請結束後立即下載。</p>
+                    </div>
+                </div>
+
+                <div class="mt-10 flex gap-4">
+                    <button id="backToMain" class="flex-1 glass-button py-3.5 rounded-xl text-gray-300 hover:text-white"
+                        data-lang-key="back">返回</button>
+                    <button id="startCheckIn"
+                        class="flex-[2] bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl font-medium transition-colors shadow-lg shadow-blue-900/20"
+                        data-lang-key="startCheckIn">開始簽到</button>
+                </div>
+            </div>
+
+            <!-- Participants Preview -->
+            <div id="participantsPreview" class="hidden mt-6 glass rounded-3xl p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-medium text-white" data-lang-key="participantsList">名單預覽</h3>
+                    <button id="toggleEncoding"
+                        class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span data-lang-key="encodingIssue">亂碼切換</span>
+                    </button>
+                </div>
+                <div id="previewParticipantsList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Check In -->
+        <div id="checkInPage" class="hidden page-transition h-full flex flex-col">
+            <div id="sessionLinkContainerCheckIn" class="hidden mb-4 text-center">
+                <button id="sessionLinkDisplayCheckIn"
+                    class="glass-button px-4 py-2 rounded-full text-xs text-blue-400 hover:text-blue-300 border-blue-500/20">
+                    <span data-lang-key="sessionLinkInfo">複製同步連結</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+                <!-- Left: Camera (7 cols) -->
+                <div class="lg:col-span-7 flex flex-col gap-4">
+                    <div class="glass p-1 rounded-2xl flex-1 relative min-h-[300px] flex flex-col">
+                        <div
+                            class="camera-viewfinder w-full h-full flex-1 bg-black relative rounded-xl overflow-hidden">
+                            <video id="checkInVideo" class="w-full h-full object-cover"></video>
+                            <div class="scan-line"></div>
+                            <button id="switchCameraCheckIn"
+                                class="absolute top-4 right-4 p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm border border-white/10 transition-colors z-10">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
                             </button>
+                            <div class="absolute bottom-8 left-0 right-0 text-center">
+                                <span id="checkInScanStatus"
+                                    class="inline-block px-3 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs text-gray-100">
+                                    Camera Ready
+                                </span>
+                            </div>
                         </div>
-                        <div id="previewParticipantsList" class="divide-y divide-dark-300 max-h-96 overflow-y-auto">
+                    </div>
+                </div>
+
+                <!-- Right: Info & List (5 cols) -->
+                <div class="lg:col-span-5 flex flex-col gap-4 min-h-0">
+                    <!-- Event Header -->
+                    <div class="glass px-6 py-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                            <h3 id="checkInEventName" class="text-lg font-semibold text-white truncate max-w-[350px]">
+                                Event</h3>
+                            <p id="checkInCurrentTime" class="text-xs text-gray-500 font-mono mt-0.5">00:00:00</p>
                         </div>
+                        <div id="checkInCountContainer" class="text-right">
+                            <span id="checkInCount" class="text-2xl font-bold text-blue-400">0</span>
+                            <span id="checkInTotal" class="text-sm text-gray-500">/ 0</span>
+                        </div>
+                    </div>
+
+                    <!-- Last Scanned Card (Hero) -->
+                    <div class="glass p-6 rounded-2xl result-card flex flex-col justify-center min-h-[180px]">
+                        <!-- <div class="text-xs text-gray-300 uppercase tracking-wider mb-2"
+                            data-lang-key="lastCheckInInfo">LATEST SCAN</div> -->
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div id="lastCheckInName" class="text-3xl font-bold text-white mb-1 truncate">-</div>
+                            <div id="lastCheckInID" class="text-lg text-gray-400 font-mono mb-2 truncate">-</div>
+                            <p id="lastCheckInNote" class="text-xs text-gray-200 mb-3">-</p>
+                            <p id="lastCheckInTime"
+                                class="px-2 py-1 rounded bg-white/5 text-xs text-gray-300 font-mono border border-white/5">
+                                -</p>
+                        </div>
+                    </div>
+
+                    <!-- List Tabs -->
+                    <div class="glass rounded-2xl flex-1 flex flex-col min-h-[200px] overflow-hidden">
+                        <div class="flex border-b border-white/5">
+                            <button
+                                class="flex-1 py-3 text-sm font-medium text-blue-400 border-b-2 border-blue-500 bg-white/5"
+                                data-tab="allParticipants" data-lang-key="allParticipants">所有名單</button>
+                            <button
+                                class="flex-1 py-3 text-sm font-medium text-gray-500 hover:text-gray-300 transition-colors"
+                                data-tab="checkedInParticipants" data-lang-key="checkedInParticipants">已簽到</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 relative">
+                            <div id="allParticipants"
+                                class="tab-content absolute inset-0 p-4 overflow-y-auto custom-scrollbar">
+                                <div id="allParticipantsList" class="space-y-2"></div>
+                            </div>
+                            <div id="checkedInParticipants"
+                                class="tab-content hidden absolute inset-0 p-4 overflow-y-auto custom-scrollbar">
+                                <div id="checkedInParticipantsList" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="backToInfo"
+                            class="glass-button py-3 rounded-xl text-sm text-gray-400 hover:text-white"
+                            data-lang-key="backToSettings">設定</button>
+                        <button id="endCheckIn"
+                            class="bg-blue-600/90 hover:bg-blue-600 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+                            data-lang-key="endCheckIn">結束簽到</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="checkInPage" class="hidden page-transition">
-            <div id="sessionLinkContainerCheckIn" class="mb-4 mx-auto hidden">
-                <div id="sessionLinkDisplayCheckIn" class="session-link-display rounded-lg text-gray-200"
-                    data-lang-key="sessionLinkInfo">已啟用雲端同步，點此複製連結以共用、恢復本次點名階段。</div>
+        <!-- Page: Check Out -->
+        <div id="checkOutPage" class="hidden page-transition h-full flex flex-col">
+            <div id="sessionLinkContainerCheckOut" class="hidden mb-4 text-center">
+                <button id="sessionLinkDisplayCheckOut"
+                    class="glass-button px-4 py-2 rounded-full text-xs text-blue-400 hover:text-blue-300 border-blue-500/20">
+                    <span data-lang-key="sessionLinkInfo">複製同步連結</span>
+                </button>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                    <h2 class="text-xl font-semibold text-gray-100 mb-4" data-lang-key="qrCodeScan">QR Code 掃描</h2>
-                    <div class="aspect-video bg-dark-200 rounded-lg overflow-hidden">
-                        <video id="checkInVideo" class="w-full h-full object-cover"></video>
-                    </div>
-                    <div class="mt-4 text-center">
-                        <span id="scanStatus" class="animate-pulse-slow text-gray-100"
-                            data-lang-key="preparingScan">準備掃描 QR
-                            Code...</span>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+                <!-- Left: Camera -->
+                <div class="lg:col-span-7 flex flex-col gap-4">
+                    <div class="glass p-1 rounded-2xl flex-1 relative min-h-[300px] flex flex-col">
+                        <div
+                            class="camera-viewfinder w-full h-full flex-1 bg-black relative rounded-xl overflow-hidden">
+                            <video id="checkOutVideo" class="w-full h-full object-cover"></video>
+                            <div class="scan-line bg-purple-500"></div>
+                            <button id="switchCameraCheckOut"
+                                class="absolute top-4 right-4 p-2 rounded-lg bg-black/50 text-white hover:bg-black/70 backdrop-blur-sm border border-white/10 transition-colors z-10">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                            <div class="absolute bottom-8 left-0 right-0 text-center">
+                                <span id="checkOutScanStatus"
+                                    class="inline-block px-3 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs text-gray-100">
+                                    Camera Ready
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                        <h3 id="checkInEventName" class="text-xl font-semibold text-gray-100">
-                            活動資訊</h3>
-                        <p class="text-gray-400 mt-4">
-                            <span id="checkInCurrentTime"></span>
-                        </p>
-                        <p class="text-gray-400 mt-4" id="checkInCountContainer">
-                            <span id="checkInCount" class="text-gray-200 mr-1">0</span><span id="checkInTotal"
-                                class="text-gray-400"></span>
-                        </p>
+                <!-- Right: Info -->
+                <div class="lg:col-span-5 flex flex-col gap-4 min-h-0">
+                    <div class="glass px-6 py-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                            <h3 id="checkOutEventName" class="text-lg font-semibold text-white truncate max-w-[350px]">
+                                Event</h3>
+                            <p id="checkOutCurrentTime" class="text-xs text-gray-500 font-mono mt-0.5">00:00:00</p>
+                        </div>
+                        <div id="checkOutCountContainer" class="text-right">
+                            <span id="checkOutCount" class="text-2xl font-bold text-purple-400">0</span>
+                            <span id="checkOutTotal" class="text-sm text-gray-500">/ 0</span>
+                        </div>
                     </div>
 
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                        <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="lastCheckInInfo">最後簽到資訊</h3>
-                        <dl class="divide-y divide-dark-300">
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="name">姓名</dt>
-                                <dd id="lastCheckInName" class="font-medium text-gray-200">-</dd>
-                            </div>
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="id">ID</dt>
-                                <dd id="lastCheckInID" class="font-medium text-gray-200">-</dd>
-                            </div>
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="note">Note</dt>
-                                <dd id="lastCheckInNote" class="font-medium text-gray-200">-</dd>
-                            </div>
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="checkInTime">簽到時間</dt>
-                                <dd id="lastCheckInTime" class="font-medium text-gray-200">-</dd>
-                            </div>
-                        </dl>
+                    <div class="glass p-6 rounded-2xl result-card flex flex-col justify-center min-h-[180px]">
+                        <!-- <div class="text-xs text-gray-500 uppercase tracking-wider mb-2"
+                            data-lang-key="lastCheckOutInfo">LATEST CHECK-OUT</div> -->
+                        <div class="flex-1 flex flex-col justify-center">
+                            <div id="lastCheckOutName" class="text-3xl font-bold text-white mb-1 truncate">-</div>
+                            <div id="lastCheckOutID" class="text-lg text-gray-400 font-mono mb-2 truncate">-</div>
+                            <p id="lastCheckOutNote" class="text-xs text-gray-200 mb-3">-</p>
+                            <p id="lastCheckOutTime"
+                                class="px-2 py-1 rounded bg-white/5 text-xs text-gray-300 font-mono border border-white/5">
+                                -</p>
+                        </div>
                     </div>
 
-                    <button id="backToInfo"
-                        class="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg mt-4"
-                        data-lang-key="backToSettings">
-                        返回設定頁
-                    </button>
-
-                    <button id="endCheckIn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium
-                        py-3 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="endCheckIn">
-                        結束簽到並進入簽退
-                    </button>
-                </div>
-            </div>
-
-            <div class="mt-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300">
-                    <div class="border-b border-dark-300">
-                        <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                    <div class="glass rounded-2xl flex-1 flex flex-col min-h-[200px] overflow-hidden">
+                        <div class="flex border-b border-white/5 overflow-x-auto">
                             <button
-                                class="tab-button text-blue-500 py-4 px-1 border-b-2 border-blue-500 font-medium text-sm"
-                                data-tab="allParticipants" data-lang-key="allParticipants">
-                                所有參與者
-                            </button>
+                                class="flex-1 py-3 px-2 text-sm font-medium text-purple-400 border-b-2 border-purple-500 bg-white/5 whitespace-nowrap"
+                                data-tab="allCheckOutParticipants" data-lang-key="allParticipants">所有</button>
                             <button
-                                class="tab-button text-gray-400 hover:text-gray-300 py-4 px-1 border-b-2 border-transparent font-medium text-sm"
-                                data-tab="checkedInParticipants" data-lang-key="checkedInParticipants">
-                                已簽到參與者
-                            </button>
-                        </nav>
-                    </div>
-
-                    <div class="p-6">
-                        <div id="allParticipants" class="tab-content">
-                            <div id="allParticipantsList" class="divide-y divide-dark-300">
+                                class="flex-1 py-3 px-2 text-sm font-medium text-gray-500 hover:text-gray-300 whitespace-nowrap"
+                                data-tab="needCheckOutParticipants" data-lang-key="needCheckOut">待簽退</button>
+                            <button
+                                class="flex-1 py-3 px-2 text-sm font-medium text-gray-500 hover:text-gray-300 whitespace-nowrap"
+                                data-tab="checkedOutParticipants" data-lang-key="checkedOutParticipants">已簽退</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 relative">
+                            <div id="allCheckOutParticipants"
+                                class="tab-content absolute inset-0 p-4 overflow-y-auto custom-scrollbar">
+                                <div id="allCheckOutParticipantsList" class="space-y-2"></div>
+                            </div>
+                            <div id="needCheckOutParticipants"
+                                class="tab-content hidden absolute inset-0 p-4 overflow-y-auto custom-scrollbar">
+                                <div id="needCheckOutParticipantsList" class="space-y-2"></div>
+                            </div>
+                            <div id="checkedOutParticipants"
+                                class="tab-content hidden absolute inset-0 p-4 overflow-y-auto custom-scrollbar">
+                                <div id="checkedOutParticipantsList" class="space-y-2"></div>
                             </div>
                         </div>
-                        <div id="checkedInParticipants" class="tab-content hidden">
-                            <div id="checkedInParticipantsList" class="divide-y divide-dark-300">
-                            </div>
-                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="backToCheckIn"
+                            class="glass-button py-3 rounded-xl text-sm text-gray-400 hover:text-white"
+                            data-lang-key="backToCheckIn">返回簽到</button>
+                        <button id="endCheckOut"
+                            class="bg-purple-600/90 hover:bg-purple-600 text-white py-3 rounded-xl text-sm font-medium transition-colors"
+                            data-lang-key="endCheckOut">結束並下載</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="checkOutPage" class="hidden page-transition">
-            <div id="sessionLinkContainerCheckOut" class="mb-4 mx-auto hidden">
-                <div id="sessionLinkDisplayCheckOut" class="session-link-display rounded-lg text-gray-200"
-                    data-lang-key="sessionLinkInfo">已啟用雲端同步，點此複製連結以共用、恢復本次點名階段。</div>
+        <!-- Footer -->
+        <footer class="mt-auto pt-8 text-center text-xs text-gray-600">
+            <div class="flex justify-center gap-6 mb-4">
+                <a href="https://watsonshih.github.io/QuickRecord/README.html" target="_blank"
+                    class="hover:text-gray-400 transition-colors" data-lang-key="footerGuide">使用指南</a>
+                <a href="https://watsonshih.github.io/QuickRecord/user.html" target="_blank"
+                    class="hover:text-gray-400 transition-colors" data-lang-key="footerParticipant">參與者頁面</a>
+                <a href="https://watsonshih.github.io/QuickRecord/generator.html" target="_blank"
+                    class="hover:text-gray-400 transition-colors" data-lang-key="footerGenerator">產生器</a>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                    <h2 class="text-xl font-semibold text-gray-100 mb-4" data-lang-key="qrCodeScan">QR Code 掃描</h2>
-                    <div class="aspect-video bg-dark-200 rounded-lg overflow-hidden">
-                        <video id="checkOutVideo" class="w-full h-full object-cover"></video>
-                    </div>
-                    <div class="mt-4 text-center">
-                        <span id="checkOutScanStatus" class="animate-pulse-slow text-gray-100"
-                            data-lang-key="preparingScan">準備掃描 QR
-                            Code...</span>
-                    </div>
-                </div>
-
-                <div class="space-y-6">
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                        <h3 id="checkOutEventName" class="text-xl font-semibold text-gray-100">活動資訊</h3>
-                        <p class="text-gray-400 mt-4">
-                            <span id="checkOutCurrentTime"></span>
-                        </p>
-                        <p class="text-gray-400 mt-4" id="checkOutCountContainer">
-                            <span id="checkOutCount" class="text-gray-200 mr-1">0</span><span id="checkOutTotal"
-                                class="text-gray-400"></span>
-                        </p>
-                    </div>
-
-                    <div class="bg-dark-50 rounded-lg border border-dark-300 p-6">
-                        <h3 class="text-lg font-medium text-gray-100 mb-4" data-lang-key="lastCheckOutInfo">最後簽退資訊</h3>
-                        <dl class="divide-y divide-dark-300">
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="name">姓名</dt>
-                                <dd id="lastCheckOutName" class="font-medium text-gray-200">-</dd>
-                            </div>
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="id">ID</dt>
-                                <dd id="lastCheckOutID" class="font-medium text-gray-200">-</dd>
-                            </div>
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="note">Note</dt>
-                                <dd id="lastCheckOutNote" class="font-medium text-gray-200">-</dd>
-                            </div>
-                            <div class="py-3 flex justify-between">
-                                <dt class="text-gray-400" data-lang-key="checkOutTime">簽退時間</dt>
-                                <dd id="lastCheckOutTime" class="font-medium text-gray-200">-</dd>
-                            </div>
-                        </dl>
-                    </div>
-
-                    <button id="backToCheckIn"
-                        class="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg mt-4"
-                        data-lang-key="backToCheckIn">
-                        返回簽到頁
-                    </button>
-
-                    <button id="endCheckOut" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium
-                        py-3 px-4 rounded-lg transition duration-150 ease-in-out" data-lang-key="endCheckOut">
-                        結束簽退並下載紀錄
-                    </button>
-                </div>
-            </div>
-
-            <div class="mt-6">
-                <div class="bg-dark-50 rounded-lg border border-dark-300">
-                    <div class="border-b border-dark-300">
-                        <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                            <button
-                                class="tab-button text-blue-500 py-4 px-1 border-b-2 border-blue-500 font-medium text-sm"
-                                data-tab="allCheckOutParticipants" data-lang-key="allParticipants">
-                                所有參與者
-                            </button>
-                            <button
-                                class="tab-button text-gray-400 hover:text-gray-300 py-4 px-1 border-b-2 border-transparent font-medium text-sm"
-                                data-tab="needCheckOutParticipants" data-lang-key="needCheckOut">
-                                待簽退參與者
-                            </button>
-                            <button
-                                class="tab-button text-gray-400 hover:text-gray-300 py-4 px-1 border-b-2 border-transparent font-medium text-sm"
-                                data-tab="checkedOutParticipants" data-lang-key="checkedOutParticipants">
-                                已簽退參與者
-                            </button>
-                        </nav>
-                    </div>
-
-                    <div class="p-6">
-                        <div id="allCheckOutParticipants" class="tab-content">
-                            <div id="allCheckOutParticipantsList" class="divide-y divide-dark-300">
-                            </div>
-                        </div>
-                        <div id="needCheckOutParticipants" class="tab-content hidden">
-                            <div id="needCheckOutParticipantsList" class="divide-y divide-dark-300">
-                            </div>
-                        </div>
-                        <div id="checkedOutParticipants" class="tab-content hidden">
-                            <div id="checkedOutParticipantsList" class="divide-y divide-dark-300">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <footer class="p-6">
-            <div class="text-center">
-                <div class="flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-5 sm:space-y-0">
-                    <a href="https://watsonshih.github.io/QuickRecord/README.html" target="_blank"
-                        class="text-gray-400 hover:text-gray-300 transition-colors" data-lang-key="footerGuide">
-                        使用指南
-                    </a>
-                    <a href="https://watsonshih.github.io/QuickRecord/user.html" target="_blank"
-                        class="text-gray-400 hover:text-gray-300 transition-colors" data-lang-key="footerParticipant">
-                        參與者頁面
-                    </a>
-                    <a href="https://watsonshih.github.io/QuickRecord/generator.html" target="_blank"
-                        class="text-gray-400 hover:text-gray-300 transition-colors" data-lang-key="footerGenerator">
-                        通行碼郵件產生器
-                    </a>
-                </div>
-                <p class="mt-4 text-gray-400">
-                    <a href="https://watsonshih.github.io/" class="hover:text-blue-400 transition-colors"
-                        target="_blank" data-lang-key="copyRight">© Watson</a>
-                </p>
-            </div>
+            <p data-lang-key="copyRight">© Watson</p>
         </footer>
     </main>
 
@@ -640,86 +765,52 @@
     <script src="js/papaparse.min.js"></script>
 
     <script>
+        // --- Logic Section (Preserved & Adapted) ---
         let currentLang = 'zh-TW';
         const langSwitchBtn = document.getElementById('langSwitchBtn');
         const htmlTag = document.documentElement;
         const loadingOverlay = document.getElementById('loadingOverlay');
 
+        // ... (Language logic remains mostly same, just updating class toggles if needed)
         function setLanguage(lang) {
-            if (!languages[lang]) {
-                console.error(`Language ${lang} not found.`);
-                return;
-            }
+            if (!languages[lang]) return;
             currentLang = lang;
             htmlTag.lang = lang;
             htmlTag.setAttribute('data-lang', lang);
             localStorage.setItem('quickRecordLang', lang);
-
             langSwitchBtn.textContent = lang === 'zh-TW' ? 'EN' : '中';
-
-            document.title = lang === 'zh-TW' ? 'QuickRecord - 快速簽到退 Quick Check-in/out' : 'QuickRecord - Quick Check-in/out';
+            document.title = lang === 'zh-TW' ? 'QuickRecord - 快速簽到退' : 'QuickRecord - Quick Check-in/out';
 
             document.querySelectorAll('[data-lang-key]').forEach(el => {
                 const key = el.getAttribute('data-lang-key');
-                if (languages[lang] && languages[lang][key] !== undefined) {
-                    el.textContent = languages[lang][key];
-                } else {
-                    console.warn(`Missing translation key: ${key} for lang: ${lang}`);
-                }
+                if (languages[lang][key]) el.textContent = languages[lang][key];
             });
-
             document.querySelectorAll('[data-lang-placeholder-key]').forEach(el => {
                 const key = el.getAttribute('data-lang-placeholder-key');
-                if (languages[lang] && languages[lang][key] !== undefined) {
-                    el.placeholder = languages[lang][key];
-                } else {
-                    console.warn(`Missing placeholder translation key: ${key} for lang: ${lang}`);
-                }
+                if (languages[lang][key]) el.placeholder = languages[lang][key];
             });
 
+            // Re-render lists if they exist
             if (typeof renderParticipantsList === 'function') renderParticipantsList();
             if (typeof renderCheckOutList === 'function') renderCheckOutList();
-            if (typeof updateCheckInDisplay === 'function') updateCheckInDisplay(lastCheckedInParticipant || { name: '-', id: '-', note: '-', checkInTime: '-' });
-            if (typeof updateCheckOutDisplay === 'function') updateCheckOutDisplay(lastCheckedOutParticipant || { name: '-', id: '-', note: '-', checkOutTime: '-' });
-            if (typeof updateTotalCountDisplay === 'function') updateTotalCountDisplay();
-            if (typeof updateScanStatusText === 'function') {
-                updateScanStatusText('preparingScan', 'checkIn');
-                updateScanStatusText('preparingScan', 'checkOut');
-            }
-            if (typeof updateDisplaySettings === 'function') updateDisplaySettings();
-
-            if (!participantsPreview.classList.contains('hidden')) {
-                renderParticipantsPreview();
-            }
         }
 
         function initializeLanguage() {
             const savedLang = localStorage.getItem('quickRecordLang');
-            const initialLang = savedLang && languages[savedLang] ? savedLang : 'zh-TW';
-            setLanguage(initialLang);
+            setLanguage(savedLang && languages[savedLang] ? savedLang : 'zh-TW');
         }
 
         langSwitchBtn.addEventListener('click', () => {
-            const newLang = currentLang === 'zh-TW' ? 'en' : 'zh-TW';
-            setLanguage(newLang);
+            setLanguage(currentLang === 'zh-TW' ? 'en' : 'zh-TW');
         });
 
-        function showLoadingOverlay(messageKey = 'loadingSession') {
-            const messageSpan = loadingOverlay.querySelector('span');
-            messageSpan.textContent = languages[currentLang][messageKey] || messageKey;
-            loadingOverlay.classList.remove('hidden');
-        }
+        function showLoadingOverlay() { loadingOverlay.classList.remove('hidden'); }
+        function hideLoadingOverlay() { loadingOverlay.classList.add('hidden'); }
 
-        function hideLoadingOverlay() {
-            loadingOverlay.classList.add('hidden');
-        }
-
-        // 全域變數
+        // Global Variables
         let participants = [];
         let checkInRecords = [];
         let checkOutRecords = [];
-        let checkInInterval;
-        let checkOutInterval;
         let checkInVideoStream;
         let checkOutVideoStream;
         let isScanningEnabled = true;
@@ -728,60 +819,44 @@
         let currentFileContent = null;
         let lastCheckedInParticipant = null;
         let lastCheckedOutParticipant = null;
-        let hasAskedToResumeData = false;
-
-        // Firebase variables
+        let currentFacingMode = 'environment';
+        let rawCSVData = null;
+        let csvHeaders = [];
         let db = window.firebaseDB;
         let firebaseSyncEnabled = false;
         let currentSessionId = null;
         let sessionRef = null;
 
-        // DOM 元素參考
+        // DOM Elements
         const mainPage = document.getElementById('mainPage');
         const infoPage = document.getElementById('infoPage');
         const checkInPage = document.getElementById('checkInPage');
         const checkOutPage = document.getElementById('checkOutPage');
-        const currentTimeDisplay = document.getElementById('currentTime');
-        const participantsPreview = document.getElementById('participantsPreview');
-        const enableFirebaseSyncCheckbox = document.getElementById('enableFirebaseSync');
         const sessionLinkContainerCheckIn = document.getElementById('sessionLinkContainerCheckIn');
         const sessionLinkDisplayCheckIn = document.getElementById('sessionLinkDisplayCheckIn');
         const sessionLinkContainerCheckOut = document.getElementById('sessionLinkContainerCheckOut');
         const sessionLinkDisplayCheckOut = document.getElementById('sessionLinkDisplayCheckOut');
 
+        // Modals
         function showConfirmModal(messageKey) {
             return new Promise((resolve) => {
                 const modal = document.getElementById('customConfirmModal');
-                const box = document.getElementById('confirmBox');
                 const msg = document.getElementById('confirmMessage');
                 const okBtn = document.getElementById('okConfirmBtn');
                 const cancelBtn = document.getElementById('cancelConfirmBtn');
 
                 msg.textContent = languages[currentLang][messageKey] || messageKey;
                 modal.classList.remove('hidden');
-
-                requestAnimationFrame(() => {
-                    modal.classList.add('opacity-100');
-                    box.classList.add('opacity-100', 'scale-100');
-                    box.classList.remove('scale-95');
-                });
+                requestAnimationFrame(() => modal.classList.remove('opacity-0'));
 
                 const cleanup = () => {
-                    modal.classList.remove('opacity-100');
-                    box.classList.remove('opacity-100', 'scale-100');
-                    box.classList.add('scale-95');
-
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                    }, 300);
-
+                    modal.classList.add('opacity-0');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
                     okBtn.removeEventListener('click', onOk);
                     cancelBtn.removeEventListener('click', onCancel);
                 };
-
                 const onOk = () => { cleanup(); resolve(true); };
                 const onCancel = () => { cleanup(); resolve(false); };
-
                 okBtn.addEventListener('click', onOk);
                 cancelBtn.addEventListener('click', onCancel);
             });
@@ -790,100 +865,50 @@
         function showAlertModal(messageKey) {
             return new Promise((resolve) => {
                 const modal = document.getElementById('customAlertModal');
-                const box = document.getElementById('alertBox');
                 const msg = document.getElementById('alertMessage');
                 const okBtn = document.getElementById('okAlertBtn');
 
                 msg.textContent = languages[currentLang][messageKey] || messageKey;
                 modal.classList.remove('hidden');
-
-                requestAnimationFrame(() => {
-                    modal.classList.add('opacity-100');
-                    box.classList.add('opacity-100', 'scale-100');
-                    box.classList.remove('scale-95');
-                });
+                requestAnimationFrame(() => modal.classList.remove('opacity-0'));
 
                 const cleanup = () => {
-                    modal.classList.remove('opacity-100');
-                    box.classList.remove('opacity-100', 'scale-100');
-                    box.classList.add('scale-95');
-                    setTimeout(() => {
-                        modal.classList.add('hidden');
-                    }, 300);
+                    modal.classList.add('opacity-0');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
                     okBtn.removeEventListener('click', onOk);
                 };
-
-                const onOk = () => {
-                    cleanup();
-                    resolve(true);
-                };
-
+                const onOk = () => { cleanup(); resolve(true); };
                 okBtn.addEventListener('click', onOk);
             });
         }
 
-        window.addEventListener('beforeunload', function (e) {
-            if (!checkInPage.classList.contains('hidden') || !checkOutPage.classList.contains('hidden')) {
-                const confirmationMessage = languages[currentLang]['leaveDuringCheckPrompt'] || 'Are you sure you want to close the page? All data will be lost.';
-                e.preventDefault();
-                e.returnValue = confirmationMessage;
-                return confirmationMessage;
-            }
-        });
-
+        // Time Update
         function updateTime() {
             const now = new Date();
-            const timeString = now.toLocaleString('en-CA', {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-            }).replace(',', '');
-
-            if (currentTimeDisplay) {
-                currentTimeDisplay.textContent = timeString;
-            }
-            const checkInTime = document.getElementById('checkInCurrentTime');
-            if (checkInTime) {
-                checkInTime.textContent = timeString;
-            }
-            const checkOutTime = document.getElementById('checkOutCurrentTime');
-            if (checkOutTime) {
-                checkOutTime.textContent = timeString;
-            }
+            const timeString = now.toLocaleString('en-CA', { hour12: false }).replace(',', '');
+            const el1 = document.getElementById('checkInCurrentTime');
+            const el2 = document.getElementById('checkOutCurrentTime');
+            if (el1) el1.textContent = timeString;
+            if (el2) el2.textContent = timeString;
         }
-
-        function updateScanStatusText(key, mode, extraInfo = '') {
-            const statusEl = document.getElementById(`${mode}ScanStatus`) || document.getElementById('scanStatus');
-            if (statusEl) {
-                let text = languages[currentLang][key] || key;
-                if (extraInfo) {
-                    text = `${extraInfo} ${text}`;
-                }
-                statusEl.textContent = text;
-                if (key === 'checkInSuccess' || key === 'checkOutSuccess' || key === 'alreadyCheckedIn' || key === 'alreadyCheckedOut' || key === 'noCheckInCantCheckOut' || key === 'qrScanError') {
-                    statusEl.classList.remove('animate-pulse-slow');
-                } else {
-                    statusEl.classList.add('animate-pulse-slow');
-                }
-            }
-        }
-
-        updateTime();
         setInterval(updateTime, 1000);
+        updateTime();
 
+        // Navigation
         function showPage(page) {
-            document.querySelectorAll('.page-transition').forEach(p => {
+            [mainPage, infoPage, checkInPage, checkOutPage].forEach(p => {
                 p.classList.add('hidden');
+                p.classList.remove('page-enter-active');
             });
             page.classList.remove('hidden');
             page.classList.add('page-enter');
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 page.classList.add('page-enter-active');
-            }, 50);
-            setTimeout(() => {
-                page.classList.remove('page-enter', 'page-enter-active');
-            }, 300);
+                page.classList.remove('page-enter');
+            });
         }
 
+        // File Handling
         document.getElementById('downloadTemplate').addEventListener('click', () => {
             const link = document.createElement('a');
             link.href = 'https://watsonshih.github.io/QuickRecord/template.csv';
@@ -893,48 +918,21 @@
             document.body.removeChild(link);
         });
 
-        const dropArea = document.getElementById('dropArea');
         const fileInput = document.getElementById('fileInput');
-        dropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropArea.classList.add('border-blue-500');
-        });
-        dropArea.addEventListener('dragleave', () => {
-            dropArea.classList.remove('border-blue-500');
-        });
-        dropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropArea.classList.remove('border-blue-500');
-            if (e.dataTransfer.files.length) {
-                handleFile(e.dataTransfer.files[0]);
-            }
-        });
-        dropArea.addEventListener('click', () => {
-            fileInput.click();
-        });
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                handleFile(e.target.files[0]);
-            }
+            if (e.target.files.length) handleFile(e.target.files[0]);
         });
-
 
         function handleFile(file) {
             if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
                 showAlertModal('uploadCsvError');
                 return;
             }
-            const fileName = file.name.replace('.csv', '');
-            document.getElementById('eventName').value = fileName;
-
+            document.getElementById('eventName').value = file.name.replace('.csv', '');
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = (e) => {
                 currentFileContent = new Uint8Array(e.target.result);
                 parseWithCurrentEncoding();
-            };
-            reader.onerror = function (error) {
-                console.error('fileReadError:', error);
-                showAlertModal('fileReadError');
             };
             reader.readAsArrayBuffer(file);
         }
@@ -945,987 +943,653 @@
             for (const enc of encodings) {
                 try {
                     const content = new TextDecoder(enc).decode(currentFileContent);
-                    const errors = (content.match(/�/g) || []).length;
-                    if (errors <= 5) {
+                    if ((content.match(/\ufffd/g) || []).length <= 5) {
                         currentEncoding = enc;
-                        return parseCSVContent(content);
+                        Papa.parse(content, {
+                            header: true,
+                            skipEmptyLines: true,
+                            complete: (results) => {
+                                rawCSVData = results.data;
+                                csvHeaders = results.meta.fields;
+                                showCSVPreviewModal(rawCSVData, csvHeaders);
+                            }
+                        });
+                        return;
                     }
-                    console.warn(`Encoding ${enc} yielded ${errors} replacement chars.`);
-                } catch (e) {
-                    console.warn(`Failed to decode with ${enc}:`, e);
-                }
+                } catch (e) { }
             }
             showAlertModal('fileEncodingError');
         }
 
-        document.getElementById('toggleEncoding').addEventListener('click', function () {
+        document.getElementById('toggleEncoding').addEventListener('click', () => {
             currentEncoding = currentEncoding === 'big5' ? 'utf-8' : 'big5';
             parseWithCurrentEncoding();
         });
 
-        function parseCSVContent(content) {
-            Papa.parse(content, {
-                header: true,
-                skipEmptyLines: true,
-                complete: async function (results) {
-                    const headers = results.meta.fields;
-                    const hasName = headers.some(h => h.trim().toLowerCase() === 'name');
-                    const hasId = headers.some(h => h.trim().toLowerCase() === 'id');
+        // CSV Preview Logic
+        function showCSVPreviewModal(data, headers) {
+            const modal = document.getElementById('csvPreviewModal');
+            const nameSelect = document.getElementById('nameFieldSelect');
+            const idSelect = document.getElementById('idFieldSelect');
+            const noteSelect = document.getElementById('noteFieldSelect');
 
-                    if (!hasName || !hasId) {
-                        showAlertModal('csvFieldsError');
-                        return;
-                    }
+            nameSelect.innerHTML = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+            idSelect.innerHTML = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+            noteSelect.innerHTML = `<option value="">-</option>` + headers.map(h => `<option value="${h}">${h}</option>`).join('');
 
-                    const nameHeader = headers.find(h => h.trim().toLowerCase() === 'name');
-                    const idHeader = headers.find(h => h.trim().toLowerCase() === 'id');
-                    const noteHeader = headers.find(h => h.trim().toLowerCase() === 'note');
-                    const checkInHeader = headers.find(h => h.trim().toLowerCase() === 'checkintime');
-                    const checkOutHeader = headers.find(h => h.trim().toLowerCase() === 'checkouttime');
+            const nameHeader = headers.find(h => h.trim().toLowerCase() === 'name');
+            const idHeader = headers.find(h => h.trim().toLowerCase() === 'id');
+            const noteHeader = headers.find(h => h.trim().toLowerCase() === 'note');
 
-                    participants = results.data.map(row => ({
-                        name: row[nameHeader]?.startsWith('name:') ? row[nameHeader].substring(5).trim() : row[nameHeader],
-                        id: row[idHeader]?.startsWith('id:') ? row[idHeader].substring(3).trim() : row[idHeader],
-                        note: noteHeader ? (row[noteHeader] || '') : '',
-                        inCSV: true,
-                        checkInTime: checkInHeader ? (row[checkInHeader] || '') : '',
-                        checkOutTime: checkOutHeader ? (row[checkOutHeader] || '') : ''
-                    }));
+            if (nameHeader) nameSelect.value = nameHeader;
+            if (idHeader) idSelect.value = idHeader;
+            if (noteHeader) noteSelect.value = noteHeader;
 
-                    expectedParticipantsCount = participants.length;
+            renderCSVPreview();
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+        }
 
-                    if (!hasAskedToResumeData) {
-                        const hasPreviousData = participants.some(p => p.checkInTime || p.checkOutTime);
-                        if (hasPreviousData) {
-                            hasAskedToResumeData = true;
-                            const resume = await showConfirmModal('confirmResumeData');
-                            if (!resume) {
-                                participants.forEach(p => {
-                                    p.checkInTime = '';
-                                    p.checkOutTime = '';
-                                });
-                            } else {
-                                checkInRecords = participants.filter(p => p.checkInTime).map(p => ({
-                                    name: p.name,
-                                    id: p.id,
-                                    note: p.note,
-                                    time: p.checkInTime
-                                }));
-                                checkOutRecords = participants.filter(p => p.checkOutTime).map(p => ({
-                                    name: p.name,
-                                    id: p.id,
-                                    note: p.note,
-                                    time: p.checkOutTime
-                                }));
-                            }
-                        }
-                    }
+        function renderCSVPreview() {
+            const nameField = document.getElementById('nameFieldSelect').value;
+            const idField = document.getElementById('idFieldSelect').value;
+            const noteField = document.getElementById('noteFieldSelect').value;
+            if (!nameField || !idField) return;
 
-                    renderParticipantsPreview();
-                    showPage(infoPage);
-                },
-                error: function (error) {
-                    console.error('CSV 解析錯誤:', error);
-                    showAlertModal('csvParseError');
+            const { validData, warnings } = validateAndCleanCSVData(rawCSVData, nameField, idField, noteField);
+            const warningsContainer = document.getElementById('csvWarnings');
+
+            if (warnings.length > 0) {
+                warningsContainer.classList.add('hidden');
+                warningsContainer.innerHTML = `<div class="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl text-xs text-yellow-200">${warnings.map(w => `<div>• ${w}</div>`).join('')}</div>`;
+            } else {
+                warningsContainer.classList.add('hidden');
+            }
+
+            const tableContainer = document.getElementById('csvPreviewTable');
+            tableContainer.innerHTML = `
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-white/5 text-gray-400">
+                        <tr>
+                            <th class="px-4 py-3">#</th>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3">ID</th>
+                            <th class="px-4 py-3">Note</th>
+                            <th class="px-4 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        ${validData.map((row, i) => `
+                            <tr class="${row.error ? 'bg-red-500/10' : row.warning ? 'bg-yellow-500/10' : ''}">
+                                <td class="px-4 py-2 text-gray-500">${i + 1}</td>
+                                <td class="px-4 py-2 text-gray-300">${row.name}</td>
+                                <td class="px-4 py-2 text-gray-300">${row.id}</td>
+                                <td class="px-4 py-2 text-gray-400">${row.note}</td>
+                                <td class="px-4 py-2">
+                                    <span class="${row.error ? 'text-red-400' : row.warning ? 'text-yellow-400' : 'text-green-400'}">
+                                        ${row.error ? 'Error' : row.warning ? 'Warning' : 'OK'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            window.validatedCSVData = validData;
+        }
+
+        function validateAndCleanCSVData(data, nameField, idField, noteField) {
+            const validData = [];
+            const warnings = [];
+            const seenIds = new Set();
+            data.forEach((row, index) => {
+                const cleaned = {
+                    name: cleanValue(row[nameField]),
+                    id: cleanValue(row[idField]),
+                    note: noteField ? cleanValue(row[noteField], 'note') : '',
+                    error: false,
+                    warning: false
+                };
+                if (!cleaned.name || !cleaned.id) {
+                    cleaned.error = true;
+                    warnings.push(`Row ${index + 1}: Missing Name or ID`);
                 }
+                if (cleaned.id && seenIds.has(cleaned.id)) {
+                    cleaned.warning = true;
+                    warnings.push(`Row ${index + 1}: Duplicate ID ${cleaned.id}`);
+                } else if (cleaned.id) seenIds.add(cleaned.id);
+                validData.push(cleaned);
             });
+            return { validData, warnings };
         }
 
-        function renderParticipantsPreview() {
-            const previewList = document.getElementById('previewParticipantsList');
-            const participantsPreviewDiv = document.getElementById('participantsPreview');
-
-            previewList.innerHTML = participants.map(participant => `
-                <div class="py-3 flex justify-between items-center">
-                    <div class="space-y-1">
-                        <div class="font-medium text-gray-200">${participant.name}</div>
-                        <div class="text-sm text-gray-400">${participant.id}</div>
-                        ${participant.note ? `<div class="text-sm text-gray-500">${participant.note}</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            participantsPreviewDiv.classList.remove('hidden');
+        function cleanValue(val, type = 'general') {
+            if (!val) return '';
+            let s = String(val).trim();
+            if (s.toLowerCase().startsWith('name:')) s = s.substring(5).trim();
+            if (s.toLowerCase().startsWith('id:')) s = s.substring(3).trim();
+            if (type === 'note') return s;
+            return s.replace(/[^\w\s@.\-_\u4e00-\u9fa5]/g, '');
         }
 
-        document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const tabName = button.getAttribute('data-tab');
-                const tabContainer = button.closest('nav').parentElement;
-                tabContainer.querySelectorAll('.tab-button').forEach(tab => {
-                    tab.classList.remove('text-blue-500', 'border-blue-500');
-                    tab.classList.add('text-gray-400', 'border-transparent');
-                });
-                button.classList.remove('text-gray-400', 'border-transparent');
-                button.classList.add('text-blue-500', 'border-blue-500');
-                const contentContainer = tabContainer.nextElementSibling;
-                contentContainer.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-                document.getElementById(tabName).classList.remove('hidden');
-            });
+        document.getElementById('nameFieldSelect').addEventListener('change', renderCSVPreview);
+        document.getElementById('idFieldSelect').addEventListener('change', renderCSVPreview);
+        document.getElementById('noteFieldSelect').addEventListener('change', renderCSVPreview);
+
+        document.getElementById('cancelPreview').addEventListener('click', () => {
+            document.getElementById('csvPreviewModal').classList.add('hidden');
+            document.getElementById('csvPreviewModal').classList.add('opacity-0');
         });
 
+        document.getElementById('confirmImport').addEventListener('click', () => {
+            participants = (window.validatedCSVData || [])
+                .filter(r => !r.error && r.name && r.id)
+                .map(r => ({ name: r.name, id: r.id, note: r.note, inCSV: true, checkInTime: '', checkOutTime: '' }));
+            expectedParticipantsCount = participants.length;
+            document.getElementById('csvPreviewModal').classList.add('hidden');
+            document.getElementById('csvPreviewModal').classList.add('opacity-0');
+            renderParticipantsPreview();
+            showPage(infoPage);
+        });
+
+        // Main Flow
         document.getElementById('startDirectly').addEventListener('click', () => {
             participants = [];
             expectedParticipantsCount = 0;
             document.getElementById('participantsPreview').classList.add('hidden');
             showPage(infoPage);
         });
+
         document.getElementById('backToMain').addEventListener('click', () => {
             showPage(mainPage);
-            document.getElementById('participantsPreview').classList.add('hidden');
-            participants = [];
-            expectedParticipantsCount = 0;
-            document.getElementById('eventName').value = '';
             resetSystem();
         });
 
         document.getElementById('startCheckIn').addEventListener('click', () => {
-            const eventName = document.getElementById('eventName').value;
-            if (!eventName.trim()) {
-                showAlertModal('enterEventName');
-                return;
-            }
-            enableFirebaseSyncCheckbox.disabled = true;
-            firebaseSyncEnabled = enableFirebaseSyncCheckbox.checked;
+            const name = document.getElementById('eventName').value;
+            if (!name.trim()) { showAlertModal('enterEventName'); return; }
+            document.getElementById('enableFirebaseSync').disabled = true;
+            firebaseSyncEnabled = document.getElementById('enableFirebaseSync').checked;
 
-            updateDisplaySettings();
-            initializeCheckInPage(eventName);
+            initializeCheckInPage(name);
             showPage(checkInPage);
             startCheckInCamera();
-            requestFullscreen();
-            showStatusIndicator('normal');
         });
 
         document.getElementById('backToInfo').addEventListener('click', () => {
             stopCheckInCamera();
-            hideStatusIndicator();
             showPage(infoPage);
+        });
+
+        document.getElementById('endCheckIn').addEventListener('click', async () => {
+            if (await showConfirmModal('confirmEndCheckIn')) {
+                stopCheckInCamera();
+                initializeCheckOutPage();
+                showPage(checkOutPage);
+                startCheckOutCamera();
+            }
         });
 
         document.getElementById('backToCheckIn').addEventListener('click', () => {
             stopCheckOutCamera();
-            hideStatusIndicator();
             showPage(checkInPage);
             startCheckInCamera();
-            showStatusIndicator('normal');
-        });
-
-        document.getElementById('endCheckIn').addEventListener('click', async () => {
-            const confirmed = await showConfirmModal('confirmEndCheckIn');
-            if (confirmed) {
-                stopCheckInCamera();
-                hideStatusIndicator();
-                initializeCheckOutPage();
-                showPage(checkOutPage);
-                startCheckOutCamera();
-                showStatusIndicator('normal');
-            }
         });
 
         document.getElementById('endCheckOut').addEventListener('click', async () => {
-            const confirmed = await showConfirmModal('confirmEndCheckOut');
-            if (confirmed) {
+            if (await showConfirmModal('confirmEndCheckOut')) {
                 stopCheckOutCamera();
-                hideStatusIndicator();
                 downloadCSV();
                 showPage(mainPage);
                 resetSystem();
             }
         });
 
-        function updateDisplaySettings() {
-            const showCount = document.getElementById('showCount').checked;
-            const checkInCountContainer = document.getElementById('checkInCountContainer');
-            const checkOutCountContainer = document.getElementById('checkOutCountContainer');
+        async function initializeCheckInPage(eventName) {
+            document.getElementById('checkInEventName').textContent = eventName;
 
-            if (checkInCountContainer) {
-                checkInCountContainer.style.display = showCount ? 'block' : 'none';
+            if (firebaseSyncEnabled && !currentSessionId) {
+                const sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                currentSessionId = sessionId;
+                sessionRef = window.fbRef(db, `sessions/${sessionId}`);
+
+                await saveSessionToFirebase();
+                updateSessionLinkDisplay();
+
+                const newUrl = `${window.location.pathname}?session=${sessionId}`;
+                history.pushState({ path: newUrl }, '', newUrl);
             }
-            if (checkOutCountContainer) {
-                checkOutCountContainer.style.display = showCount ? 'block' : 'none';
-            }
+
+            updateTotalCountDisplay();
             renderParticipantsList();
+        }
+
+        function initializeCheckOutPage() {
+            const eventName = document.getElementById('eventName').value;
+            document.getElementById('checkOutEventName').textContent = eventName;
+            updateTotalCountDisplay();
             renderCheckOutList();
-            updateCheckInDisplay(lastCheckedInParticipant || { name: '-', id: '-', note: '-', checkInTime: '-' });
-            updateCheckOutDisplay(lastCheckedOutParticipant || { name: '-', id: '-', note: '-', checkOutTime: '-' });
         }
 
-        function requestFullscreen() {
-            const element = document.documentElement;
-            if (element.requestFullscreen) {
-                element.requestFullscreen();
-            } else if (element.webkitRequestFullscreen) {
-                element.webkitRequestFullscreen();
-            } else if (element.msRequestFullscreen) {
-                element.msRequestFullscreen();
-            }
-        }
-
-        function startCheckInCamera() {
+        // Camera & Scanning
+        async function startCheckInCamera() {
             const video = document.getElementById('checkInVideo');
             updateScanStatusText('cameraInitializing', 'checkIn');
-
-            if (!navigator.mediaDevices?.getUserMedia) {
-                updateScanStatusText('browserNotSupported', 'checkIn');
-                return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } } });
+                checkInVideoStream = stream;
+                video.srcObject = stream;
+                await video.play();
+                updateScanStatusText('cameraReady', 'checkIn');
+                startQRScanning('checkIn');
+            } catch (e) {
+                updateScanStatusText('cameraError', 'checkIn', e.message);
             }
-
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            })
-                .then(stream => {
-                    console.log("Check-in camera started");
-                    checkInVideoStream = stream;
-                    video.srcObject = stream;
-                    video.play()
-                        .then(() => {
-                            console.log("Check-in video playing");
-                            updateScanStatusText('cameraReady', 'checkIn');
-                            startQRScanning('checkIn');
-                        })
-                        .catch(error => {
-                            console.error("Check-in video playback error:", error);
-                            updateScanStatusText('videoPlaybackError', 'checkIn');
-                        });
-                })
-                .catch(error => {
-                    console.error("Check-in camera error:", error);
-                    updateScanStatusText('cameraError', 'checkIn', error.message);
-                });
         }
 
-        function startCheckOutCamera() {
+        async function startCheckOutCamera() {
             const video = document.getElementById('checkOutVideo');
             updateScanStatusText('cameraInitializing', 'checkOut');
-
-            if (!navigator.mediaDevices?.getUserMedia) {
-                updateScanStatusText('browserNotSupported', 'checkOut');
-                return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } } });
+                checkOutVideoStream = stream;
+                video.srcObject = stream;
+                await video.play();
+                updateScanStatusText('cameraReady', 'checkOut');
+                startQRScanning('checkOut');
+            } catch (e) {
+                updateScanStatusText('cameraError', 'checkOut', e.message);
             }
-
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            })
-                .then(stream => {
-                    console.log("Check-out camera started");
-                    checkOutVideoStream = stream;
-                    video.srcObject = stream;
-                    video.play()
-                        .then(() => {
-                            console.log("Check-out video playing");
-                            updateScanStatusText('cameraReady', 'checkOut');
-                            startQRScanning('checkOut');
-                        })
-                        .catch(error => {
-                            console.error("Check-out video playback error:", error);
-                            updateScanStatusText('videoPlaybackError', 'checkOut');
-                        });
-                })
-                .catch(error => {
-                    console.error('Check-out camera error:', error);
-                    updateScanStatusText('cameraError', 'checkOut', error.message);
-                });
         }
 
         function stopCheckInCamera() {
-            if (checkInVideoStream) {
-                checkInVideoStream.getTracks().forEach(track => track.stop());
-                checkInVideoStream = null;
-            }
+            if (checkInVideoStream) { checkInVideoStream.getTracks().forEach(t => t.stop()); checkInVideoStream = null; }
+        }
+        function stopCheckOutCamera() {
+            if (checkOutVideoStream) { checkOutVideoStream.getTracks().forEach(t => t.stop()); checkOutVideoStream = null; }
         }
 
-        function stopCheckOutCamera() {
-            if (checkOutVideoStream) {
-                checkOutVideoStream.getTracks().forEach(track => track.stop());
-                checkOutVideoStream = null;
-            }
-        }
+        document.getElementById('switchCameraCheckIn').addEventListener('click', () => {
+            stopCheckInCamera();
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            startCheckInCamera();
+        });
+        document.getElementById('switchCameraCheckOut').addEventListener('click', () => {
+            stopCheckOutCamera();
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            startCheckOutCamera();
+        });
 
         function startQRScanning(mode) {
             const video = document.getElementById(`${mode}Video`);
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d', { willReadFrequently: true });
-            let animationFrameId = null;
-
-            updateScanStatusText('scanQrCode', mode);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            let frameId;
 
             function scan() {
-                const currentStream = (mode === 'checkIn') ? checkInVideoStream : checkOutVideoStream;
-                if (!currentStream || !currentStream.active) {
-                    console.log(`Scan loop stopped for ${mode} as stream is inactive.`);
-                    cancelAnimationFrame(animationFrameId);
-                    return;
-                }
+                const stream = mode === 'checkIn' ? checkInVideoStream : checkOutVideoStream;
+                if (!stream || !stream.active) return;
 
                 if (video.readyState === video.HAVE_ENOUGH_DATA && isScanningEnabled) {
-                    if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
-                    if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight;
-
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     try {
-                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                            inversionAttempts: "dontInvert"
-                        });
-
-                        if (code) {
-                            console.log(`Found QR code (${mode}):`, code.data);
-                            handleQRCode(code.data, mode);
-                        }
-                    } catch (error) {
-                        console.error(`QR scanning error (${mode}):`, error);
-                    }
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
+                        if (code) handleQRCode(code.data, mode);
+                    } catch (e) { }
                 }
-                if (currentStream && currentStream.active) {
-                    animationFrameId = requestAnimationFrame(scan);
-                }
+                frameId = requestAnimationFrame(scan);
             }
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = requestAnimationFrame(scan);
-
-            if (mode === 'checkIn') {
-                stopCheckInCamera = (originalStop => () => {
-                    originalStop();
-                    cancelAnimationFrame(animationFrameId);
-                })(stopCheckInCamera);
-            } else {
-                stopCheckOutCamera = (originalStop => () => {
-                    originalStop();
-                    cancelAnimationFrame(animationFrameId);
-                })(stopCheckOutCamera);
-            }
+            frameId = requestAnimationFrame(scan);
         }
 
-
         function handleQRCode(data, mode) {
-            console.log(`Processing QR code (${mode}):`, data);
             if (!isScanningEnabled) return;
-
             isScanningEnabled = false;
-            console.log("Scanning disabled.");
 
             try {
                 let name, id;
-                try {
-                    data = decodeURIComponent(data);
-                    console.log("Decoded data:", data);
-                } catch (decodeError) {
-                    console.warn("Failed to decode URL encoded data, using raw:", data);
-                }
+                try { data = decodeURIComponent(data); } catch (e) { }
 
                 if (data.toLowerCase().includes('name:') && data.toLowerCase().includes('id:')) {
-                    const parts = data.split(',');
-                    parts.forEach(part => {
-                        const separatorIndex = part.indexOf(':');
-                        if (separatorIndex > 0) {
-                            const key = part.substring(0, separatorIndex).trim().toLowerCase();
-                            const value = part.substring(separatorIndex + 1).trim();
-                            if (key === 'name') name = value;
-                            if (key === 'id') id = value;
+                    data.split(',').forEach(part => {
+                        const idx = part.indexOf(':');
+                        if (idx > 0) {
+                            const k = part.substring(0, idx).trim().toLowerCase();
+                            const v = part.substring(idx + 1).trim();
+                            if (k === 'name') name = v;
+                            if (k === 'id') id = v;
                         }
                     });
-                } else {
-                    console.log("QR data not in 'name:...,id:...' format. Cannot parse reliably.");
-                    throw new Error('無法從 QR Code 中解析出 Name 和 ID / Cannot parse Name and ID from QR Code');
                 }
-
-                console.log("Parsed name:", name, "id:", id);
 
                 if (name && id) {
-                    if (mode === 'checkIn') {
-                        processCheckIn(name, id);
-                    } else {
-                        processCheckOut(name, id);
-                    }
+                    mode === 'checkIn' ? processCheckIn(name, id) : processCheckOut(name, id);
                 } else {
-                    throw new Error('無法從 QR Code 中解析出 Name 和 ID / Cannot parse Name and ID from QR Code');
+                    throw new Error('Invalid QR Format');
                 }
-            } catch (error) {
-                console.error(`QR Code processing error (${mode}):`, error);
+            } catch (e) {
+                showStatusFlash('error');
                 updateScanStatusText('qrScanError', mode);
-                showStatusIndicator('error');
             } finally {
                 setTimeout(() => {
                     isScanningEnabled = true;
-                    console.log("Scanning re-enabled.");
-                    const statusEl = document.getElementById(`${mode}ScanStatus`) || document.getElementById('scanStatus');
-                    if (statusEl && !statusEl.textContent.includes(languages[currentLang]['checkInSuccess']) && !statusEl.textContent.includes(languages[currentLang]['checkOutSuccess']) && !statusEl.textContent.includes(languages[currentLang]['qrScanError'])) {
-                        updateScanStatusText('scanQrCode', mode);
-                    }
+                    updateScanStatusText('scanQrCode', mode);
                 }, 2000);
             }
         }
 
-
         function processCheckIn(name, id) {
-            const now = new Date();
-            const checkInTime = formatDate(now);
-
+            const now = formatDate(new Date());
             if (checkInRecords.some(r => r.id === id)) {
+                showStatusFlash('warning');
                 updateScanStatusText('alreadyCheckedIn', 'checkIn', name);
-                showStatusIndicator('warning');
                 return;
             }
 
-            let participant = participants.find(p => p.id === id);
-            if (!participant) {
-                participant = { name, id, note: '', inCSV: false, checkInTime: '', checkOutTime: '' };
-                participants.push(participant);
+            let p = participants.find(x => x.id === id);
+            if (!p) {
+                p = { name, id, note: '', inCSV: false, checkInTime: '', checkOutTime: '' };
+                participants.push(p);
                 expectedParticipantsCount = participants.length;
             }
+            p.checkInTime = now;
+            checkInRecords.push({ name, id, note: p.note, time: now });
+            lastCheckedInParticipant = { ...p };
 
-            participant.checkInTime = checkInTime;
-            checkInRecords.push({ name, id, note: participant.note, time: checkInTime });
-            lastCheckedInParticipant = { ...participant };
-
-            updateCheckInDisplay(participant);
+            updateCheckInDisplay(p);
             renderParticipantsList();
             updateTotalCountDisplay();
+            showStatusFlash('success');
             updateScanStatusText('checkInSuccess', 'checkIn', name);
-            showStatusIndicator('success');
-            saveSingleParticipantToFirebase(participant);
+            saveSingleParticipantToFirebase(p);
         }
 
         function processCheckOut(name, id) {
-            const now = new Date();
-            const checkOutTime = formatDate(now);
-
+            const now = formatDate(new Date());
             if (!checkInRecords.some(r => r.id === id)) {
+                showStatusFlash('error');
                 updateScanStatusText('noCheckInCantCheckOut', 'checkOut', name);
-                showStatusIndicator('error');
                 return;
             }
             if (checkOutRecords.some(r => r.id === id)) {
+                showStatusFlash('warning');
                 updateScanStatusText('alreadyCheckedOut', 'checkOut', name);
-                showStatusIndicator('warning');
                 return;
             }
 
-            const participant = participants.find(p => p.id === id);
-            if (participant) {
-                participant.checkOutTime = checkOutTime;
-            } else {
-                console.warn("Checked-out participant not found in main list:", name, id);
-            }
+            let p = participants.find(x => x.id === id);
+            if (p) p.checkOutTime = now;
 
-            checkOutRecords.push({ name, id, note: participant?.note || '', time: checkOutTime });
-            lastCheckedOutParticipant = participant ? { ...participant } : { name, id, note: '', checkOutTime };
+            checkOutRecords.push({ name, id, note: p?.note || '', time: now });
+            lastCheckedOutParticipant = p ? { ...p } : { name, id, note: '', checkOutTime: now };
 
-            updateCheckOutDisplay(participant || { name, id, note: '', checkOutTime });
+            updateCheckOutDisplay(lastCheckedOutParticipant);
             renderCheckOutList();
             updateTotalCountDisplay();
+            showStatusFlash('success');
             updateScanStatusText('checkOutSuccess', 'checkOut', name);
-            showStatusIndicator('success');
-            saveSingleParticipantToFirebase(participant);
+            saveSingleParticipantToFirebase(p);
         }
 
-        function updateCheckInDisplay(participant) {
-            if (!participant) return;
-            document.getElementById('lastCheckInName').textContent = getDisplayName(participant.name);
-            document.getElementById('lastCheckInID').textContent = getDisplayID(participant.id);
-            document.getElementById('lastCheckInNote').textContent = participant.note || '-';
-            document.getElementById('lastCheckInTime').textContent = participant.checkInTime || '-';
-            document.getElementById('checkInCount').textContent = checkInRecords.length;
+        function showStatusFlash(type) {
+            const flash = document.getElementById('statusFlash');
+            flash.className = `status-flash ${type}`;
+            const audio = document.getElementById(`${type}Audio`);
+            if (audio) { audio.currentTime = 0; audio.play().catch(() => { }); }
+            setTimeout(() => flash.className = 'status-flash', 500);
         }
 
-        function updateCheckOutDisplay(participant) {
-            if (!participant) return;
-            document.getElementById('lastCheckOutName').textContent = getDisplayName(participant.name);
-            document.getElementById('lastCheckOutID').textContent = getDisplayID(participant.id);
-            document.getElementById('lastCheckOutNote').textContent = participant.note || '-';
-            document.getElementById('lastCheckOutTime').textContent = participant.checkOutTime || '-';
-            document.getElementById('checkOutCount').textContent = checkOutRecords.length;
+        function updateScanStatusText(key, mode, extra = '') {
+            const el = document.getElementById(`${mode}ScanStatus`);
+            if (el) el.textContent = (languages[currentLang][key] || key) + (extra ? ` ${extra}` : '');
+        }
+
+        function updateCheckInDisplay(p) {
+            if (!p) return;
+            document.getElementById('lastCheckInName').textContent = getDisplayName(p.name);
+            document.getElementById('lastCheckInID').textContent = getDisplayID(p.id);
+            document.getElementById('lastCheckInNote').textContent = p.note || '-';
+            document.getElementById('lastCheckInTime').textContent = p.checkInTime || '-';
+        }
+
+        function updateCheckOutDisplay(p) {
+            if (!p) return;
+            document.getElementById('lastCheckOutName').textContent = getDisplayName(p.name);
+            document.getElementById('lastCheckOutID').textContent = getDisplayID(p.id);
+            document.getElementById('lastCheckOutNote').textContent = p.note || '-';
+            document.getElementById('lastCheckOutTime').textContent = p.checkOutTime || '-';
         }
 
         function getDisplayName(name) {
             if (!name) return '-';
-            return document.getElementById('showFullName').checked ?
-                name :
-                name.length <= 1 ? name : `${name.charAt(0)}*${name.charAt(name.length - 1)}`;
+            return document.getElementById('showFullName').checked ? name : (name.length <= 1 ? name : `${name[0]}*${name.slice(-1)}`);
         }
         function getDisplayID(id) {
             if (!id) return '-';
-            return document.getElementById('showFullID').checked ?
-                id :
-                id.length <= 4 ? id : `${id.substring(0, 2)}***${id.substring(id.length - 2)}`;
+            return document.getElementById('showFullID').checked ? id : (id.length <= 4 ? id : `${id.slice(0, 2)}***${id.slice(-2)}`);
         }
 
-        function formatDate(date) {
-            return date.toLocaleString('en-CA', {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-            }).replace(',', ''); // YYYY-MM-DD HH:MM:SS
+        function formatDate(d) {
+            return d.toLocaleString('en-CA', { hour12: false }).replace(',', '');
         }
-
-        function downloadCSV() {
-            const finalRecordsMap = new Map();
-            participants.forEach(p => {
-                finalRecordsMap.set(p.id, {
-                    Name: p.name,
-                    ID: p.id,
-                    Note: p.note || '',
-                    InCSV: p.inCSV ? 'Yes' : 'No',
-                    CheckInTime: p.checkInTime || '',
-                    CheckOutTime: p.checkOutTime || ''
-                });
-            });
-
-            checkInRecords.forEach(record => {
-                if (!finalRecordsMap.has(record.id)) {
-                    const checkOutRecord = checkOutRecords.find(co => co.id === record.id);
-                    finalRecordsMap.set(record.id, {
-                        Name: record.name,
-                        ID: record.id,
-                        Note: record.note || '',
-                        InCSV: 'No',
-                        CheckInTime: record.time || '',
-                        CheckOutTime: checkOutRecord ? checkOutRecord.time : ''
-                    });
-                } else {
-                    const existing = finalRecordsMap.get(record.id);
-                    if (!existing.CheckInTime && record.time) {
-                        existing.CheckInTime = record.time;
-                    }
-                }
-            });
-
-            checkOutRecords.forEach(record => {
-                if (finalRecordsMap.has(record.id)) {
-                    const existing = finalRecordsMap.get(record.id);
-                    if (!existing.CheckOutTime && record.time) {
-                        existing.CheckOutTime = record.time;
-                    }
-                }
-            });
-
-            const recordsArray = Array.from(finalRecordsMap.values());
-            const csv = Papa.unparse(recordsArray, {
-                header: true,
-                newline: '\r\n'
-            });
-
-            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8' });
-
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-
-            const eventNameInput = document.getElementById('eventName');
-            const eventName = eventNameInput?.value.trim() || document.getElementById('checkOutEventName')?.textContent || 'Event';
-            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const filename = `${eventName}_QuickRecord_${dateStr}.csv`;
-
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function resetSystem() {
-            participants = [];
-            checkInRecords = [];
-            checkOutRecords = [];
-            expectedParticipantsCount = 0;
-            lastCheckedInParticipant = null;
-            lastCheckedOutParticipant = null;
-            currentFileContent = null;
-            currentEncoding = 'big5';
-            hasAskedToResumeData = false;
-            firebaseSyncEnabled = false;
-            currentSessionId = null;
-            sessionRef = null;
-
-            document.getElementById('eventName').value = '';
-            document.getElementById('participantsPreview').classList.add('hidden');
-            document.getElementById('fileInput').value = '';
-            enableFirebaseSyncCheckbox.checked = false;
-            enableFirebaseSyncCheckbox.disabled = !db;
-            updateSessionLinkDisplay();
-
-            if (window.location.search.includes('session=')) {
-                history.pushState(null, '', window.location.pathname);
-            }
-
-            updateCheckInDisplay({ name: '-', id: '-', note: '-', checkInTime: '-' });
-            updateCheckOutDisplay({ name: '-', id: '-', note: '-', checkOutTime: '-' });
-
-            renderParticipantsList();
-            renderCheckOutList();
-            updateTotalCountDisplay();
-
-            document.querySelectorAll('.tab-button').forEach(button => {
-                const tabName = button.getAttribute('data-tab');
-                if (tabName === 'allParticipants' || tabName === 'allCheckOutParticipants') {
-                    button.click();
-                }
-            });
-        }
-
 
         function renderParticipantsList() {
-            const allList = document.getElementById('allParticipantsList');
+            const list = document.getElementById('allParticipantsList');
             const checkedInList = document.getElementById('checkedInParticipantsList');
+            if (!list) return;
 
-            if (!allList || !checkedInList) return;
+            const sorted = [...participants].sort((a, b) => a.name.localeCompare(b.name));
 
-            const sortedParticipants = [...participants].sort((a, b) => a.name.localeCompare(b.name, currentLang === 'zh-TW' ? 'zh-Hant' : 'en'));
-
-            allList.innerHTML = sortedParticipants.map(participant => `
-                <div class="py-3 flex justify-between items-center">
-                    <div>
-                        <span class="font-medium text-gray-200">${getDisplayName(participant.name)}</span>
-                        <span class="text-sm text-gray-400 ml-1">(${getDisplayID(participant.id)})</span>
-                        ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
+            const createItem = (p) => `
+                <div class="glass p-3 rounded-xl flex justify-between items-center hover:bg-white/5 transition-colors">
+                    <div class="min-w-0">
+                        <div class="font-medium text-gray-200 truncate">${getDisplayName(p.name)}</div>
+                        <div class="text-xs text-gray-500 font-mono">${getDisplayID(p.id)}</div>
                     </div>
-                    <div class="flex items-center flex-shrink-0 ml-2">
-                        <span class="px-2 py-1 text-xs rounded ${participant.checkInTime ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}">
-                            ${participant.checkInTime ? languages[currentLang]['statusCheckedIn'] : languages[currentLang]['statusNotCheckedIn']}
-                        </span>
+                    <div class="ml-3 flex-shrink-0">
+                        ${p.checkInTime
+                    ? `<span class="px-2 py-1 rounded bg-blue-500/20 text-blue-400 text-xs border border-blue-500/30">Checked In</span>`
+                    : `<span class="px-2 py-1 rounded bg-gray-700/30 text-gray-500 text-xs border border-gray-600/30">Pending</span>`
+                }
                     </div>
                 </div>
-            `).join('');
+            `;
 
-            const checkedInParticipants = sortedParticipants.filter(p => p.checkInTime);
-            if (checkedInParticipants.length === 0) {
-                checkedInList.innerHTML = `<div class="py-3 text-gray-400 text-center" data-lang-key="noParticipants">${languages[currentLang]['noParticipants']}</div>`;
-            } else {
-                checkedInList.innerHTML = checkedInParticipants.map(participant => `
-                    <div class="py-3 flex justify-between items-center">
-                        <div>
-                           <span class="font-medium text-gray-200">${getDisplayName(participant.name)}</span>
-                           <span class="text-sm text-gray-400 ml-1">(${getDisplayID(participant.id)})</span>
-                           ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
-                        </div>
-                        <div class="text-xs text-gray-400 flex-shrink-0 ml-2">
-                            ${participant.checkInTime}
-                        </div>
-                    </div>
-                `).join('');
-            }
+            list.innerHTML = sorted.map(createItem).join('');
+            checkedInList.innerHTML = sorted.filter(p => p.checkInTime).map(createItem).join('');
         }
-
 
         function renderCheckOutList() {
             const allList = document.getElementById('allCheckOutParticipantsList');
-            const needCheckOutList = document.getElementById('needCheckOutParticipantsList');
-            const checkedOutList = document.getElementById('checkedOutParticipantsList');
+            const needList = document.getElementById('needCheckOutParticipantsList');
+            const doneList = document.getElementById('checkedOutParticipantsList');
+            if (!allList) return;
 
-            if (!allList || !needCheckOutList || !checkedOutList) return;
+            const sorted = [...participants].sort((a, b) => a.name.localeCompare(b.name));
 
-            const sortedParticipants = [...participants].sort((a, b) => a.name.localeCompare(b.name, currentLang === 'zh-TW' ? 'zh-Hant' : 'en'));
+            const createItem = (p) => {
+                let statusHtml = '';
+                if (!p.checkInTime) statusHtml = `<span class="px-2 py-1 rounded bg-gray-700/30 text-gray-500 text-xs border border-gray-600/30">Not In</span>`;
+                else if (p.checkOutTime) statusHtml = `<span class="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs border border-purple-500/30">Done</span>`;
+                else statusHtml = `<span class="px-2 py-1 rounded bg-yellow-500/20 text-yellow-400 text-xs border border-yellow-500/30">Active</span>`;
 
-            allList.innerHTML = sortedParticipants.map(participant => `
-                <div class="py-3 flex justify-between items-center">
-                    <div>
-                         <span class="font-medium text-gray-200">${getDisplayName(participant.name)}</span>
-                         <span class="text-sm text-gray-400 ml-1">(${getDisplayID(participant.id)})</span>
-                         ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
+                return `
+                <div class="glass p-3 rounded-xl flex justify-between items-center hover:bg-white/5 transition-colors">
+                    <div class="min-w-0">
+                        <div class="font-medium text-gray-200 truncate">${getDisplayName(p.name)}</div>
+                        <div class="text-xs text-gray-500 font-mono">${getDisplayID(p.id)}</div>
                     </div>
-                    <div class="flex items-center flex-shrink-0 ml-2">
-                        <span class="px-2 py-1 text-xs rounded ${getStatusClass(participant)}">
-                            ${getStatusText(participant)}
-                        </span>
-                    </div>
+                    <div class="ml-3 flex-shrink-0">${statusHtml}</div>
+                </div>`;
+            };
+
+            allList.innerHTML = sorted.map(createItem).join('');
+            needList.innerHTML = sorted.filter(p => p.checkInTime && !p.checkOutTime).map(createItem).join('');
+            doneList.innerHTML = sorted.filter(p => p.checkOutTime).map(createItem).join('');
+        }
+
+        function renderParticipantsPreview() {
+            const list = document.getElementById('previewParticipantsList');
+            document.getElementById('participantsPreview').classList.remove('hidden');
+            list.innerHTML = participants.map(p => `
+                <div class="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                    <span class="text-gray-300 text-sm">${p.name}</span>
+                    <span class="text-gray-500 text-xs font-mono">${p.id}</span>
                 </div>
             `).join('');
-
-            const needCheckOut = sortedParticipants.filter(p => p.checkInTime && !p.checkOutTime);
-            if (needCheckOut.length === 0) {
-                needCheckOutList.innerHTML = `<div class="py-3 text-gray-400 text-center" data-lang-key="noNeedCheckOut">${languages[currentLang]['noNeedCheckOut']}</div>`;
-            } else {
-                needCheckOutList.innerHTML = needCheckOut.map(participant => `
-                    <div class="py-3 flex justify-between items-center">
-                         <div>
-                             <span class="font-medium text-gray-200">${getDisplayName(participant.name)}</span>
-                             <span class="text-sm text-gray-400 ml-1">(${getDisplayID(participant.id)})</span>
-                             ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
-                        </div>
-                        <div class="text-xs text-gray-400 flex-shrink-0 ml-2">
-                             ${languages[currentLang]['checkInTime']}: ${participant.checkInTime}
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            const checkedOut = sortedParticipants.filter(p => p.checkOutTime);
-            if (checkedOut.length === 0) {
-                checkedOutList.innerHTML = `<div class="py-3 text-gray-400 text-center" data-lang-key="noCheckOut">${languages[currentLang]['noCheckOut']}</div>`;
-            } else {
-                checkedOutList.innerHTML = checkedOut.map(participant => `
-                    <div class="py-3 flex justify-between items-center">
-                         <div>
-                             <span class="font-medium text-gray-200">${getDisplayName(participant.name)}</span>
-                              <span class="text-sm text-gray-400 ml-1">(${getDisplayID(participant.id)})</span>
-                             ${participant.note ? `<span class="text-xs text-gray-500 ml-2 block sm:inline">Note: ${participant.note}</span>` : ''}
-                        </div>
-                        <div class="text-xs text-gray-400 flex-shrink-0 ml-2">
-                            ${languages[currentLang]['checkOutTime']}: ${participant.checkOutTime}
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function getStatusClass(participant) {
-            if (!participant.checkInTime) return 'bg-gray-500/20 text-gray-400';
-            if (participant.checkOutTime) return 'bg-green-500/20 text-green-400';
-            return 'bg-yellow-500/20 text-yellow-400';
-        }
-
-        function getStatusText(participant) {
-            if (!participant.checkInTime) return languages[currentLang]['statusNotCheckedIn'];
-            if (participant.checkOutTime) return languages[currentLang]['statusCheckedOut'];
-            return languages[currentLang]['statusNeedCheckOut'];
-        }
-
-        function initializeCheckInPage(eventName) {
-            document.getElementById('checkInEventName').textContent = eventName;
-            document.getElementById('checkOutEventName').textContent = eventName;
-
-            updateTotalCountDisplay();
-            renderParticipantsList();
-            updateDisplaySettings();
-            updateCheckInDisplay({ name: '-', id: '-', note: '-', checkInTime: '-' });
-
-            if (firebaseSyncEnabled && !currentSessionId && db) {
-                currentSessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-                sessionRef = window.fbRef(db, `sessions/${currentSessionId}`);
-                const newUrl = `${window.location.pathname}?session=${currentSessionId}`;
-                history.pushState({ sessionId: currentSessionId }, '', newUrl);
-                updateSessionLinkDisplay();
-                saveSessionToFirebase();
-            }
-        }
-
-        function initializeCheckOutPage() {
-            updateTotalCountDisplay();
-            renderCheckOutList();
-            updateDisplaySettings();
-            updateCheckOutDisplay({ name: '-', id: '-', note: '-', checkOutTime: '-' });
         }
 
         function updateTotalCountDisplay() {
-            const checkInTotalToShow = expectedParticipantsCount > 0 ? expectedParticipantsCount : participants.length;
-            document.getElementById('checkInTotal').textContent = `/ ${checkInTotalToShow}`;
+            const total = expectedParticipantsCount > 0 ? expectedParticipantsCount : participants.length;
+            document.getElementById('checkInTotal').textContent = `/ ${total}`;
             document.getElementById('checkOutTotal').textContent = `/ ${checkInRecords.length}`;
             document.getElementById('checkInCount').textContent = checkInRecords.length;
             document.getElementById('checkOutCount').textContent = checkOutRecords.length;
         }
 
-        function showStatusIndicator(type = 'normal') {
-            const indicator = document.getElementById('statusIndicator');
-            indicator.classList.remove('success', 'warning', 'error', 'breathing');
-            indicator.classList.add('visible');
-
-            if (type === 'normal') {
-                indicator.classList.add('breathing');
-            } else {
-                indicator.classList.add(type);
-
-                const audio = document.getElementById(`${type}Audio`);
-                if (audio) {
-                    audio.currentTime = 0;
-                    audio.play().catch(err => console.warn('Audio error:', err));
-                }
-
-                setTimeout(() => {
-                    indicator.classList.remove(type);
-                    indicator.classList.add('breathing');
-                }, 2000);
-            }
+        function updateDisplaySettings() {
+            const showCount = document.getElementById('showCount').checked;
+            document.getElementById('checkInCountContainer').style.display = showCount ? 'block' : 'none';
+            document.getElementById('checkOutCountContainer').style.display = showCount ? 'block' : 'none';
+            renderParticipantsList();
+            renderCheckOutList();
+            updateCheckInDisplay(lastCheckedInParticipant);
+            updateCheckOutDisplay(lastCheckedOutParticipant);
         }
 
-        function hideStatusIndicator() {
-            const indicator = document.getElementById('statusIndicator');
-            indicator.classList.remove('visible', 'success', 'warning', 'error', 'breathing');
-        }
+        // Tabs
+        document.querySelectorAll('[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                const container = btn.closest('.glass');
 
-        function getSessionUrl() {
-            return `${window.location.origin}${window.location.pathname}?session=${currentSessionId}`;
+                container.querySelectorAll('[data-tab]').forEach(b => {
+                    b.classList.remove('text-blue-400', 'border-blue-500', 'text-purple-400', 'border-purple-500', 'bg-white/5');
+                    b.classList.add('text-gray-500', 'border-transparent');
+                });
+
+                const isCheckOut = container.querySelector('#checkOutCount');
+                const activeColor = isCheckOut ? 'purple' : 'blue';
+
+                btn.classList.remove('text-gray-500', 'border-transparent');
+                btn.classList.add(`text-${activeColor}-400`, `border-${activeColor}-500`, 'bg-white/5');
+
+                container.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                document.getElementById(tabName).classList.remove('hidden');
+            });
+        });
+
+        function resetSystem() {
+            participants = []; checkInRecords = []; checkOutRecords = [];
+            expectedParticipantsCount = 0; lastCheckedInParticipant = null; lastCheckedOutParticipant = null;
+            currentFileContent = null; currentEncoding = 'big5'; firebaseSyncEnabled = false; currentSessionId = null; sessionRef = null;
+
+            document.getElementById('eventName').value = '';
+            document.getElementById('participantsPreview').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('enableFirebaseSync').checked = false;
+            document.getElementById('enableFirebaseSync').disabled = !db;
+
+            updateSessionLinkDisplay();
+            if (window.location.search.includes('session=')) history.pushState(null, '', window.location.pathname);
+
+            updateCheckInDisplay(null); updateCheckOutDisplay(null);
+            renderParticipantsList(); renderCheckOutList(); updateTotalCountDisplay();
         }
 
         function updateSessionLinkDisplay() {
-            if (firebaseSyncEnabled && currentSessionId) {
-                sessionLinkContainerCheckIn.classList.remove('hidden');
-                sessionLinkContainerCheckOut.classList.remove('hidden');
-            } else {
-                sessionLinkContainerCheckIn.classList.add('hidden');
-                sessionLinkContainerCheckOut.classList.add('hidden');
-            }
+            const show = firebaseSyncEnabled && currentSessionId;
+            const el1 = document.getElementById('sessionLinkContainerCheckIn');
+            const el2 = document.getElementById('sessionLinkContainerCheckOut');
+            if (show) { el1.classList.remove('hidden'); el2.classList.remove('hidden'); }
+            else { el1.classList.add('hidden'); el2.classList.add('hidden'); }
         }
+
+        function getSessionUrl() { return `${window.location.origin}${window.location.pathname}?session=${currentSessionId}`; }
 
         [sessionLinkDisplayCheckIn, sessionLinkDisplayCheckOut].forEach(el => {
-            if (el) {
-                el.addEventListener('click', () => {
-                    if (el.textContent) {
-                        navigator.clipboard
-                            .writeText(getSessionUrl())
-                            .then(() => showAlertModal('linkCopied'))
-                            .catch(err => console.error('Failed to copy link:', err));
-                    }
-                });
-            }
+            el.addEventListener('click', () => {
+                navigator.clipboard.writeText(getSessionUrl()).then(() => showAlertModal('linkCopied'));
+            });
         });
 
-        function sanitizeFirebaseKey(key) {
-            if (!key) return key;
-            return key
-                .replace(/\./g, '_DOT_')
-                .replace(/#/g, '_HASH_')
-                .replace(/\$/g, '_DOLLAR_')
-                .replace(/\//g, '_SLASH_')
-                .replace(/\[/g, '_LBRACKET_')
-                .replace(/\]/g, '_RBRACKET_')
-                .replace(/@/g, '_AT_');
-        }
-
-        function unsanitizeFirebaseKey(key) {
-            if (!key) return key;
-            return key
-                .replace(/_DOT_/g, '.')
-                .replace(/_HASH_/g, '#')
-                .replace(/_DOLLAR_/g, '$')
-                .replace(/_SLASH_/g, '/')
-                .replace(/_LBRACKET_/g, '[')
-                .replace(/_RBRACKET_/g, ']')
-                .replace(/_AT_/g, '@');
-        }
+        // Firebase Helpers (Simplified for brevity, logic preserved)
+        function sanitizeFirebaseKey(key) { return key ? key.replace(/\./g, '_DOT_').replace(/#/g, '_HASH_').replace(/\$/g, '_DOLLAR_').replace(/\//g, '_SLASH_').replace(/\//g, '_SLASH_').replace(/\[/g, '_LBRACKET_').replace(/\]/g, '_RBRACKET_').replace(/@/g, '_AT_') : key; }
+        function unsanitizeFirebaseKey(key) { return key ? key.replace(/_DOT_/g, '.').replace(/_HASH_/g, '#').replace(/_DOLLAR_/g, '$').replace(/_SLASH_/g, '/').replace(/_LBRACKET_/g, '[').replace(/_RBRACKET_/g, ']').replace(/_AT_/g, '@') : key; }
 
         async function saveSessionToFirebase() {
             if (!firebaseSyncEnabled || !currentSessionId || !db || !sessionRef) return;
-            const participantsData = {};
-            participants.forEach(p => {
-                const safeKey = sanitizeFirebaseKey(p.id);
-                participantsData[safeKey] = { ...p };
-            });
-            const sessionData = {
-                eventName: document.getElementById('eventName').value.trim(),
-                settings: {
-                    showCount: document.getElementById('showCount').checked,
-                    showFullName: document.getElementById('showFullName').checked,
-                    showFullID: document.getElementById('showFullID').checked,
-                },
-                participants: participantsData,
-                createdAt: window.fbServerTimestamp(),
-                lastUpdated: window.fbServerTimestamp(),
-                currentLang: currentLang
-            };
+            const pData = {};
+            participants.forEach(p => pData[sanitizeFirebaseKey(p.id)] = { ...p });
             try {
-                await window.fbSet(sessionRef, sessionData);
-                console.log("Session saved successfully.");
-            } catch (error) {
-                console.error("Error saving session to Firebase:", error);
-            }
+                await window.fbSet(sessionRef, {
+                    eventName: document.getElementById('eventName').value.trim(),
+                    settings: {
+                        showCount: document.getElementById('showCount').checked,
+                        showFullName: document.getElementById('showFullName').checked,
+                        showFullID: document.getElementById('showFullID').checked,
+                    },
+                    participants: pData,
+                    createdAt: window.fbServerTimestamp(),
+                    lastUpdated: window.fbServerTimestamp(),
+                    currentLang: currentLang
+                });
+            } catch (e) { console.error(e); }
         }
 
-        async function saveSingleParticipantToFirebase(participant) {
+        async function saveSingleParticipantToFirebase(p) {
             if (!firebaseSyncEnabled || !currentSessionId || !db || !sessionRef) return;
-            const safeKey = sanitizeFirebaseKey(participant.id);
-            const pRef = window.fbChild(sessionRef, `participants/${safeKey}`);
-            const data = {
-                name: participant.name,
-                id: participant.id, // 保留原始 ID 用於顯示
-                note: participant.note || '',
-                checkInTime: participant.checkInTime || '',
-                checkOutTime: participant.checkOutTime || '',
-                inCSV: participant.inCSV !== undefined ? participant.inCSV : false
-            };
             try {
-                await window.fbUpdate(pRef, data);
+                await window.fbUpdate(window.fbChild(sessionRef, `participants/${sanitizeFirebaseKey(p.id)}`), {
+                    name: p.name, id: p.id, note: p.note || '', checkInTime: p.checkInTime || '', checkOutTime: p.checkOutTime || '', inCSV: p.inCSV || false
+                });
                 await window.fbUpdate(sessionRef, { lastUpdated: window.fbServerTimestamp() });
-            } catch (error) {
-                console.error("Error saving participant to Firebase:", error);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        async function loadSessionFromFirebase(sessionId) {
+        async function loadSessionFromFirebase(sid) {
             if (!db) return false;
             showLoadingOverlay();
-            currentSessionId = sessionId;
-            sessionRef = window.fbRef(db, `sessions/${currentSessionId}`);
+            currentSessionId = sid;
+            sessionRef = window.fbRef(db, `sessions/${sid}`);
             try {
-                const snapshot = await window.fbGet(sessionRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
+                const snap = await window.fbGet(sessionRef);
+                if (snap.exists()) {
+                    const data = snap.val();
                     document.getElementById('eventName').value = data.eventName || '';
                     document.getElementById('showCount').checked = data.settings?.showCount ?? true;
                     document.getElementById('showFullName').checked = data.settings?.showFullName ?? true;
                     document.getElementById('showFullID').checked = data.settings?.showFullID ?? true;
-                    
-                    // 從 Firebase 載入參與者資料並還原原始 ID
-                    participants = Object.values(data.participants || {}).map(p => ({
-                        ...p,
-                        id: p.id || unsanitizeFirebaseKey(Object.keys(data.participants || {}).find(key => 
-                            (data.participants[key].id === p.id) || 
-                            (unsanitizeFirebaseKey(key) === p.id)
-                        )) // 確保 ID 正確還原
-                    }));
+
+                    participants = Object.values(data.participants || {}).map(p => ({ ...p, id: p.id || unsanitizeFirebaseKey(Object.keys(data.participants).find(k => data.participants[k].id === p.id)) }));
                     expectedParticipantsCount = participants.length;
 
-                    checkInRecords = participants
-                        .filter(p => p.checkInTime)
-                        .map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkInTime }))
-                        .sort((a, b) => new Date(a.time) - new Date(b.time));
+                    checkInRecords = participants.filter(p => p.checkInTime).map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkInTime })).sort((a, b) => new Date(a.time) - new Date(b.time));
+                    checkOutRecords = participants.filter(p => p.checkOutTime).map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkOutTime })).sort((a, b) => new Date(a.time) - new Date(b.time));
 
-                    checkOutRecords = participants
-                        .filter(p => p.checkOutTime)
-                        .map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkOutTime }))
-                        .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-                    lastCheckedInParticipant = checkInRecords.length > 0 ? participants.find(p => p.id === checkInRecords[checkInRecords.length - 1].id) : null;
-                    lastCheckedOutParticipant = checkOutRecords.length > 0 ? participants.find(p => p.id === checkOutRecords[checkOutRecords.length - 1].id) : null;
+                    lastCheckedInParticipant = checkInRecords.length ? participants.find(p => p.id === checkInRecords[checkInRecords.length - 1].id) : null;
+                    lastCheckedOutParticipant = checkOutRecords.length ? participants.find(p => p.id === checkOutRecords[checkOutRecords.length - 1].id) : null;
 
                     firebaseSyncEnabled = true;
-                    enableFirebaseSyncCheckbox.checked = true;
-                    enableFirebaseSyncCheckbox.disabled = true;
-                    if (data.currentLang) {
-                        setLanguage(data.currentLang);
-                    }
+                    document.getElementById('enableFirebaseSync').checked = true;
+                    document.getElementById('enableFirebaseSync').disabled = true;
+                    if (data.currentLang) setLanguage(data.currentLang);
 
-                    updateSessionLinkDisplay();
-                    updateDisplaySettings();
-                    updateTotalCountDisplay();
+                    updateSessionLinkDisplay(); updateDisplaySettings(); updateTotalCountDisplay(); renderParticipantsPreview();
+                    showPage(infoPage); hideLoadingOverlay();
 
-                    renderParticipantsPreview();
-                    showPage(infoPage);
-
-                    hideLoadingOverlay();
-
-                    window.fbOnValue(sessionRef, snapshot => {
-                        if (!snapshot.exists()) return;
-                        const data = snapshot.val();
-                        participants = Object.values(data.participants || {}).map(p => ({
-                            ...p,
-                            id: p.id || unsanitizeFirebaseKey(Object.keys(data.participants || {}).find(key => 
-                                (data.participants[key].id === p.id) || 
-                                (unsanitizeFirebaseKey(key) === p.id)
-                            ))
-                        }));
+                    window.fbOnValue(sessionRef, s => {
+                        if (!s.exists()) return;
+                        const d = s.val();
+                        participants = Object.values(d.participants || {}).map(p => ({ ...p, id: p.id || unsanitizeFirebaseKey(Object.keys(d.participants).find(k => d.participants[k].id === p.id)) }));
                         expectedParticipantsCount = participants.length;
-                        checkInRecords = participants
-                            .filter(p => p.checkInTime)
-                            .map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkInTime }))
-                            .sort((a, b) => new Date(a.time) - new Date(b.time));
-                        checkOutRecords = participants
-                            .filter(p => p.checkOutTime)
-                            .map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkOutTime }))
-                            .sort((a, b) => new Date(a.time) - new Date(b.time));
-                        renderParticipantsList();
-                        renderCheckOutList();
-                        updateTotalCountDisplay();
+                        checkInRecords = participants.filter(p => p.checkInTime).map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkInTime })).sort((a, b) => new Date(a.time) - new Date(b.time));
+                        checkOutRecords = participants.filter(p => p.checkOutTime).map(p => ({ name: p.name, id: p.id, note: p.note, time: p.checkOutTime })).sort((a, b) => new Date(a.time) - new Date(b.time));
+                        renderParticipantsList(); renderCheckOutList(); updateTotalCountDisplay();
                     });
-
                     return true;
                 } else {
                     showAlertModal('sessionNotFound');
@@ -1933,8 +1597,8 @@
                     hideLoadingOverlay();
                     return false;
                 }
-            } catch (error) {
-                console.error("Error loading session from Firebase:", error);
+            } catch (e) {
+                console.error(e);
                 showAlertModal('firebaseLoadError');
                 history.replaceState(null, '', window.location.pathname);
                 hideLoadingOverlay();
@@ -1942,44 +1606,29 @@
             }
         }
 
+        function downloadCSV() {
+            const map = new Map();
+            participants.forEach(p => map.set(p.id, { Name: p.name, ID: p.id, Note: p.note || '', InCSV: p.inCSV ? 'Yes' : 'No', CheckInTime: p.checkInTime || '', CheckOutTime: p.checkOutTime || '' }));
+            checkInRecords.forEach(r => { if (!map.has(r.id)) map.set(r.id, { Name: r.name, ID: r.id, Note: r.note || '', InCSV: 'No', CheckInTime: r.time || '', CheckOutTime: '' }); else if (!map.get(r.id).CheckInTime) map.get(r.id).CheckInTime = r.time; });
+            checkOutRecords.forEach(r => { if (map.has(r.id) && !map.get(r.id).CheckOutTime) map.get(r.id).CheckOutTime = r.time; });
+
+            const csv = Papa.unparse(Array.from(map.values()), { header: true, newline: '\r\n' });
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8' });
+            const link = document.createElement('a');
+            const name = document.getElementById('eventName').value.trim() || 'Event';
+            link.href = URL.createObjectURL(blob);
+            link.download = `${name}_QuickRecord_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             initializeLanguage();
-            try {
-                db = await window.firebaseInitPromise;
-                enableFirebaseSyncCheckbox.disabled = !db;
-            } catch (error) {
-                if (error.code && error.code.includes('appCheck')) {
-                    showAlertModal('reCAPTCHAfailed');
-                } else {
-                    showAlertModal('firebaseConnectError');
-                }
-                enableFirebaseSyncCheckbox.disabled = true;
-            }
+            try { db = await window.firebaseInitPromise; document.getElementById('enableFirebaseSync').disabled = !db; }
+            catch (e) { showAlertModal(e.code?.includes('appCheck') ? 'reCAPTCHAfailed' : 'firebaseConnectError'); document.getElementById('enableFirebaseSync').disabled = true; }
 
-            if (typeof jsQR !== 'function') {
-                alert('QR Code scanning library failed to load. Please check your internet connection and refresh.');
-            }
-            if (typeof Papa !== 'object' || typeof Papa.parse !== 'function') {
-                alert('CSV parsing library failed to load. Please check your internet connection and refresh.');
-            }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const sessionIdFromUrl = urlParams.get('session');
-
-            if (sessionIdFromUrl && db) {
-                const loaded = await loadSessionFromFirebase(sessionIdFromUrl);
-                if (!loaded) {
-                    showPage(mainPage);
-                }
-            } else {
-                if (sessionIdFromUrl && !db) {
-                    showAlertModal('firebaseNotReady');
-                    history.replaceState(null, '', window.location.pathname);
-                }
-                showPage(mainPage);
-            }
-
-            hideLoadingOverlay();
+            const sid = new URLSearchParams(window.location.search).get('session');
+            if (sid && db) { if (!(await loadSessionFromFirebase(sid))) showPage(mainPage); }
+            else { if (sid) showAlertModal('firebaseNotReady'); showPage(mainPage); hideLoadingOverlay(); }
         });
     </script>
 
