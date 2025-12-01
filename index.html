@@ -1097,21 +1097,21 @@
                 <div class="field-mapping">
                     <label>Name:</label>
                     <select id="nameFieldSelect">
-                        <option value="">${languages[currentLang]['selectField']}</option>
+                        <option value="">${languages[currentLang]?.['selectField'] || '-- Select Field --'}</option>
                         ${headers.map(h => `<option value="${h}" ${h === fieldMappings.name ? 'selected' : ''}>${h}</option>`).join('')}
                     </select>
                 </div>
                 <div class="field-mapping">
                     <label>ID:</label>
                     <select id="idFieldSelect">
-                        <option value="">${languages[currentLang]['selectField']}</option>
+                        <option value="">${languages[currentLang]?.['selectField'] || '-- Select Field --'}</option>
                         ${headers.map(h => `<option value="${h}" ${h === fieldMappings.id ? 'selected' : ''}>${h}</option>`).join('')}
                     </select>
                 </div>
                 <div class="field-mapping">
                     <label>Note:</label>
                     <select id="noteFieldSelect">
-                        <option value="">${languages[currentLang]['selectField']}</option>
+                        <option value="">${languages[currentLang]?.['selectField'] || '-- Select Field --'}</option>
                         ${headers.map(h => `<option value="${h}" ${h === fieldMappings.note ? 'selected' : ''}>${h}</option>`).join('')}
                     </select>
                 </div>
@@ -1144,7 +1144,7 @@
         function hasSpecialChars(str) {
             if (!str) return false;
             // Firebase doesn't allow . # $ / [ ] @ in keys
-            return /[\.\#\$\/\[\]@]/.test(str);
+            return /[.#$\/\[\]@]/.test(str);
         }
 
         function removeFieldPrefix(value, fieldType) {
@@ -1268,7 +1268,7 @@
 
         document.getElementById('confirmCsvImportBtn').addEventListener('click', async () => {
             if (!csvPreviewData || !fieldMappings.name || !fieldMappings.id) {
-                showAlertModal('csvFieldsError');
+                showAlertModal('fieldMappingRequired');
                 return;
             }
 
@@ -1297,7 +1297,7 @@
                 .filter(p => p !== null);
 
             if (validParticipants.length === 0) {
-                showAlertModal('csvFieldsError');
+                showAlertModal('noValidParticipants');
                 return;
             }
 

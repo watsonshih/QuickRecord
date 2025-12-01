@@ -121,6 +121,7 @@ const languages = {
         blankValueWarning: '空白值',
         specialCharWarning: '包含特殊符號',
         fileEncodingError: '無法偵測檔案編碼，請確認檔案格式',
+        noValidParticipants: '沒有有效的參與者資料可匯入',
         selectField: '-- 選擇欄位 --',
         fieldMappingRequired: '請選擇 Name 和 ID 欄位對應',
     },
@@ -246,6 +247,7 @@ const languages = {
         blankValueWarning: 'Blank value',
         specialCharWarning: 'Contains special characters',
         fileEncodingError: 'Unable to detect file encoding, please check file format',
+        noValidParticipants: 'No valid participant data to import',
         selectField: '-- Select Field --',
         fieldMappingRequired: 'Please select Name and ID field mappings',
     }
