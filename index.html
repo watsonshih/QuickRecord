@@ -214,6 +214,56 @@
             background-color: rgba(29, 93, 174, 0.2);
         }
 
+        .csv-preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .csv-preview-table th,
+        .csv-preview-table td {
+            border: 1px solid #404040;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .csv-preview-table th {
+            background-color: #2D2D2D;
+            font-weight: 600;
+        }
+
+        .csv-preview-table tr.invalid-row {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .validation-warning {
+            background-color: rgba(234, 179, 8, 0.1);
+            border: 1px solid rgb(234, 179, 8);
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .field-mapping {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .field-mapping label {
+            min-width: 80px;
+        }
+
+        .field-mapping select {
+            flex: 1;
+            background-color: #2D2D2D;
+            border: 1px solid #404040;
+            color: #E5E7EB;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+        }
+
         #loadingOverlay {
             position: fixed;
             inset: 0;
@@ -267,7 +317,7 @@
     <div id="customConfirmModal"
         class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-opacity duration-500 opacity-0 backdrop-blur">
         <div id="confirmBox"
-            class="bg-dark-100 text-gray-200 p-6 rounded-lg shadow-lg max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0">
+            class="bg-dark-100 text-gray-200 p-6 rounded-lg border border-dark-300 max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0">
             <div id="confirmMessage" class="text-sm mb-6"></div>
             <div class="flex justify-end gap-3">
                 <button id="cancelConfirmBtn" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
@@ -280,12 +330,55 @@
 
     <div id="customAlertModal"
         class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-all duration-500 opacity-0 backdrop-blur">
-        <div class="bg-dark-100 text-gray-200 p-6 rounded-lg shadow-lg max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0"
+        <div class="bg-dark-100 text-gray-200 p-6 rounded-lg border border-dark-300 max-w-sm w-full transform scale-95 transition-all duration-300 opacity-0"
             id="alertBox">
             <div id="alertMessage" class="text-sm mb-6"></div>
             <div class="flex justify-end">
                 <button id="okAlertBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
                     data-lang-key="confirm">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="csvPreviewModal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center transition-opacity duration-500 opacity-0 backdrop-blur overflow-auto">
+        <div id="csvPreviewBox"
+            class="bg-dark-100 text-gray-200 p-6 rounded-lg border border-dark-300 max-w-4xl w-full mx-4 my-8 transform scale-95 transition-all duration-300 opacity-0 max-h-[90vh] overflow-auto">
+            <h3 class="text-lg font-semibold mb-4" data-lang-key="csvPreviewTitle">CSV 資料預覽與驗證</h3>
+            
+            <div id="validationWarnings" class="hidden validation-warning">
+                <div class="font-semibold mb-2" data-lang-key="dataValidationIssues">資料驗證問題：</div>
+                <ul id="validationWarningsList" class="list-disc list-inside text-sm"></ul>
+            </div>
+
+            <div class="mb-4">
+                <h4 class="text-sm font-semibold mb-2" data-lang-key="fieldMapping">欄位對應：</h4>
+                <div id="fieldMappingContainer"></div>
+            </div>
+
+            <div class="overflow-x-auto mb-4">
+                <table class="csv-preview-table text-sm">
+                    <thead id="csvPreviewTableHead"></thead>
+                    <tbody id="csvPreviewTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="text-sm text-gray-400 mb-4">
+                <span data-lang-key="totalRows">總計：</span>
+                <span id="totalRowsCount">0</span> <span data-lang-key="rows">行</span>
+                <span class="mx-2">|</span>
+                <span data-lang-key="validRows">有效：</span>
+                <span id="validRowsCount" class="text-green-400">0</span>
+                <span class="mx-2">|</span>
+                <span data-lang-key="invalidRows">無效：</span>
+                <span id="invalidRowsCount" class="text-red-400">0</span>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button id="cancelCsvPreviewBtn" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
+                    data-lang-key="cancel">取消</button>
+                <button id="confirmCsvImportBtn" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+                    data-lang-key="importValidData">匯入有效資料</button>
             </div>
         </div>
     </div>
@@ -969,66 +1062,289 @@
                 skipEmptyLines: true,
                 complete: async function (results) {
                     const headers = results.meta.fields;
-                    const hasName = headers.some(h => h.trim().toLowerCase() === 'name');
-                    const hasId = headers.some(h => h.trim().toLowerCase() === 'id');
-
-                    if (!hasName || !hasId) {
-                        showAlertModal('csvFieldsError');
-                        return;
-                    }
-
-                    const nameHeader = headers.find(h => h.trim().toLowerCase() === 'name');
-                    const idHeader = headers.find(h => h.trim().toLowerCase() === 'id');
-                    const noteHeader = headers.find(h => h.trim().toLowerCase() === 'note');
-                    const checkInHeader = headers.find(h => h.trim().toLowerCase() === 'checkintime');
-                    const checkOutHeader = headers.find(h => h.trim().toLowerCase() === 'checkouttime');
-
-                    participants = results.data.map(row => ({
-                        name: row[nameHeader]?.startsWith('name:') ? row[nameHeader].substring(5).trim() : row[nameHeader],
-                        id: row[idHeader]?.startsWith('id:') ? row[idHeader].substring(3).trim() : row[idHeader],
-                        note: noteHeader ? (row[noteHeader] || '') : '',
-                        inCSV: true,
-                        checkInTime: checkInHeader ? (row[checkInHeader] || '') : '',
-                        checkOutTime: checkOutHeader ? (row[checkOutHeader] || '') : ''
-                    }));
-
-                    expectedParticipantsCount = participants.length;
-
-                    if (!hasAskedToResumeData) {
-                        const hasPreviousData = participants.some(p => p.checkInTime || p.checkOutTime);
-                        if (hasPreviousData) {
-                            hasAskedToResumeData = true;
-                            const resume = await showConfirmModal('confirmResumeData');
-                            if (!resume) {
-                                participants.forEach(p => {
-                                    p.checkInTime = '';
-                                    p.checkOutTime = '';
-                                });
-                            } else {
-                                checkInRecords = participants.filter(p => p.checkInTime).map(p => ({
-                                    name: p.name,
-                                    id: p.id,
-                                    note: p.note,
-                                    time: p.checkInTime
-                                }));
-                                checkOutRecords = participants.filter(p => p.checkOutTime).map(p => ({
-                                    name: p.name,
-                                    id: p.id,
-                                    note: p.note,
-                                    time: p.checkOutTime
-                                }));
-                            }
-                        }
-                    }
-
-                    renderParticipantsPreview();
-                    showPage(infoPage);
+                    showCSVPreview(results.data, headers);
                 },
                 error: function (error) {
                     console.error('CSV 解析錯誤:', error);
                     showAlertModal('csvParseError');
                 }
             });
+        }
+
+        let csvPreviewData = null;
+        let csvHeaders = null;
+        let fieldMappings = {};
+
+        function showCSVPreview(data, headers) {
+            csvPreviewData = data;
+            csvHeaders = headers;
+            
+            // Initialize default field mappings
+            fieldMappings = {
+                name: headers.find(h => h.trim().toLowerCase() === 'name') || '',
+                id: headers.find(h => h.trim().toLowerCase() === 'id') || '',
+                note: headers.find(h => h.trim().toLowerCase() === 'note') || '',
+                checkInTime: headers.find(h => h.trim().toLowerCase() === 'checkintime') || '',
+                checkOutTime: headers.find(h => h.trim().toLowerCase() === 'checkouttime') || ''
+            };
+
+            const modal = document.getElementById('csvPreviewModal');
+            const box = document.getElementById('csvPreviewBox');
+            
+            // Create field mapping UI
+            const mappingContainer = document.getElementById('fieldMappingContainer');
+            mappingContainer.innerHTML = `
+                <div class="field-mapping">
+                    <label>Name:</label>
+                    <select id="nameFieldSelect">
+                        <option value="">-- ${languages[currentLang]['cancel']} --</option>
+                        ${headers.map(h => `<option value="${h}" ${h === fieldMappings.name ? 'selected' : ''}>${h}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="field-mapping">
+                    <label>ID:</label>
+                    <select id="idFieldSelect">
+                        <option value="">-- ${languages[currentLang]['cancel']} --</option>
+                        ${headers.map(h => `<option value="${h}" ${h === fieldMappings.id ? 'selected' : ''}>${h}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="field-mapping">
+                    <label>Note:</label>
+                    <select id="noteFieldSelect">
+                        <option value="">-- ${languages[currentLang]['cancel']} --</option>
+                        ${headers.map(h => `<option value="${h}" ${h === fieldMappings.note ? 'selected' : ''}>${h}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+
+            // Add change listeners for field mappings
+            document.getElementById('nameFieldSelect').addEventListener('change', (e) => {
+                fieldMappings.name = e.target.value;
+                renderCSVPreviewTable();
+            });
+            document.getElementById('idFieldSelect').addEventListener('change', (e) => {
+                fieldMappings.id = e.target.value;
+                renderCSVPreviewTable();
+            });
+            document.getElementById('noteFieldSelect').addEventListener('change', (e) => {
+                fieldMappings.note = e.target.value;
+                renderCSVPreviewTable();
+            });
+
+            renderCSVPreviewTable();
+
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.add('opacity-100');
+                box.classList.add('opacity-100', 'scale-100');
+                box.classList.remove('scale-95');
+            });
+        }
+
+        function hasSpecialChars(str) {
+            if (!str) return false;
+            // Firebase doesn't allow . # $ / [ ] @ in keys
+            return /[\.\#\$\/\[\]@]/.test(str);
+        }
+
+        function renderCSVPreviewTable() {
+            if (!csvPreviewData || !csvHeaders) return;
+
+            const tableHead = document.getElementById('csvPreviewTableHead');
+            const tableBody = document.getElementById('csvPreviewTableBody');
+            const warningsContainer = document.getElementById('validationWarnings');
+            const warningsList = document.getElementById('validationWarningsList');
+
+            // Validate data
+            const validationResults = validateCSVData(csvPreviewData);
+            
+            // Show warnings if any
+            if (validationResults.warnings.length > 0) {
+                warningsContainer.classList.remove('hidden');
+                warningsList.innerHTML = validationResults.warnings.map(w => `<li>${w}</li>`).join('');
+            } else {
+                warningsContainer.classList.add('hidden');
+            }
+
+            // Update counts
+            document.getElementById('totalRowsCount').textContent = csvPreviewData.length;
+            document.getElementById('validRowsCount').textContent = validationResults.validCount;
+            document.getElementById('invalidRowsCount').textContent = validationResults.invalidCount;
+
+            // Render table header
+            tableHead.innerHTML = `<tr>
+                <th>#</th>
+                <th>${fieldMappings.name || 'Name'}</th>
+                <th>${fieldMappings.id || 'ID'}</th>
+                <th>${fieldMappings.note || 'Note'}</th>
+                <th>Status</th>
+            </tr>`;
+
+            // Render table body
+            tableBody.innerHTML = csvPreviewData.map((row, index) => {
+                const name = fieldMappings.name ? row[fieldMappings.name] : '';
+                const id = fieldMappings.id ? row[fieldMappings.id] : '';
+                const note = fieldMappings.note ? (row[fieldMappings.note] || '') : '';
+                
+                const isValid = validationResults.validRows[index];
+                const rowClass = isValid ? '' : 'invalid-row';
+                const statusText = isValid ? '✓' : '✗';
+                const statusColor = isValid ? 'text-green-400' : 'text-red-400';
+
+                return `<tr class="${rowClass}">
+                    <td>${index + 1}</td>
+                    <td>${name || '<span class="text-gray-500">-</span>'}</td>
+                    <td>${id || '<span class="text-gray-500">-</span>'}</td>
+                    <td>${note || '<span class="text-gray-500">-</span>'}</td>
+                    <td class="${statusColor}">${statusText}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function validateCSVData(data) {
+            const warnings = [];
+            const validRows = [];
+            const seenIds = new Set();
+            let validCount = 0;
+            let invalidCount = 0;
+
+            const nameField = fieldMappings.name;
+            const idField = fieldMappings.id;
+
+            // Check if required fields are mapped
+            if (!nameField || !idField) {
+                warnings.push(languages[currentLang]['csvFieldsError']);
+                return { warnings, validRows: Array(data.length).fill(false), validCount: 0, invalidCount: data.length };
+            }
+
+            data.forEach((row, index) => {
+                let isValid = true;
+                const rowWarnings = [];
+
+                const name = row[nameField]?.trim();
+                const id = row[idField]?.trim();
+
+                // Check for blank values
+                if (!name || !id) {
+                    isValid = false;
+                    rowWarnings.push(`${languages[currentLang]['rows']} ${index + 1}: ${languages[currentLang]['blankValueWarning']}`);
+                }
+
+                // Check for special characters in ID (Firebase incompatible)
+                if (id && hasSpecialChars(id)) {
+                    isValid = false;
+                    rowWarnings.push(`${languages[currentLang]['rows']} ${index + 1}: ID ${languages[currentLang]['specialCharWarning']} (. # $ / [ ] @)`);
+                }
+
+                // Check for duplicate IDs
+                if (id && seenIds.has(id)) {
+                    isValid = false;
+                    rowWarnings.push(`${languages[currentLang]['rows']} ${index + 1}: ${languages[currentLang]['duplicateIdWarning']} (${id})`);
+                } else if (id) {
+                    seenIds.add(id);
+                }
+
+                validRows.push(isValid);
+                if (isValid) {
+                    validCount++;
+                } else {
+                    invalidCount++;
+                    warnings.push(...rowWarnings);
+                }
+            });
+
+            return { warnings, validRows, validCount, invalidCount };
+        }
+
+        document.getElementById('cancelCsvPreviewBtn').addEventListener('click', () => {
+            closeCSVPreview();
+        });
+
+        document.getElementById('confirmCsvImportBtn').addEventListener('click', async () => {
+            if (!csvPreviewData || !fieldMappings.name || !fieldMappings.id) {
+                showAlertModal('csvFieldsError');
+                return;
+            }
+
+            const validationResults = validateCSVData(csvPreviewData);
+            
+            // Filter only valid rows
+            const validParticipants = csvPreviewData
+                .map((row, index) => {
+                    if (!validationResults.validRows[index]) return null;
+
+                    const name = row[fieldMappings.name]?.startsWith('name:') 
+                        ? row[fieldMappings.name].substring(5).trim() 
+                        : row[fieldMappings.name]?.trim();
+                    const id = row[fieldMappings.id]?.startsWith('id:') 
+                        ? row[fieldMappings.id].substring(3).trim() 
+                        : row[fieldMappings.id]?.trim();
+                    const note = fieldMappings.note ? (row[fieldMappings.note] || '') : '';
+                    const checkInTime = fieldMappings.checkInTime ? (row[fieldMappings.checkInTime] || '') : '';
+                    const checkOutTime = fieldMappings.checkOutTime ? (row[fieldMappings.checkOutTime] || '') : '';
+
+                    return {
+                        name,
+                        id,
+                        note,
+                        inCSV: true,
+                        checkInTime,
+                        checkOutTime
+                    };
+                })
+                .filter(p => p !== null);
+
+            if (validParticipants.length === 0) {
+                showAlertModal('csvFieldsError');
+                return;
+            }
+
+            participants = validParticipants;
+            expectedParticipantsCount = participants.length;
+
+            if (!hasAskedToResumeData) {
+                const hasPreviousData = participants.some(p => p.checkInTime || p.checkOutTime);
+                if (hasPreviousData) {
+                    hasAskedToResumeData = true;
+                    const resume = await showConfirmModal('confirmResumeData');
+                    if (!resume) {
+                        participants.forEach(p => {
+                            p.checkInTime = '';
+                            p.checkOutTime = '';
+                        });
+                    } else {
+                        checkInRecords = participants.filter(p => p.checkInTime).map(p => ({
+                            name: p.name,
+                            id: p.id,
+                            note: p.note,
+                            time: p.checkInTime
+                        }));
+                        checkOutRecords = participants.filter(p => p.checkOutTime).map(p => ({
+                            name: p.name,
+                            id: p.id,
+                            note: p.note,
+                            time: p.checkOutTime
+                        }));
+                    }
+                }
+            }
+
+            closeCSVPreview();
+            renderParticipantsPreview();
+            showPage(infoPage);
+        });
+
+        function closeCSVPreview() {
+            const modal = document.getElementById('csvPreviewModal');
+            const box = document.getElementById('csvPreviewBox');
+            
+            modal.classList.remove('opacity-100');
+            box.classList.remove('opacity-100', 'scale-100');
+            box.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
         }
 
         function renderParticipantsPreview() {
