@@ -598,13 +598,14 @@
                     </div>
 
                     <!-- Last Scanned Card (Hero) -->
-                    <div class="glass p-6 rounded-2xl result-card flex flex-col justify-center min-h-[180px]">
-                        <!-- <div class="text-xs text-gray-300 uppercase tracking-wider mb-2"
-                            data-lang-key="lastCheckInInfo">LATEST SCAN</div> -->
+                    <div id="lastScanCard" class="glass p-4 lg:p-6 rounded-2xl result-card hidden lg:flex flex-col justify-center min-h-[120px] lg:min-h-[180px] fixed bottom-4 left-4 right-4 z-50 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto shadow-2xl lg:shadow-none">
+                        <button type="button" title="關閉" onclick="closeLastScanCard('lastScanCard')" class="absolute top-2 right-2 lg:hidden w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-colors z-10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                         <div class="flex-1 flex flex-col justify-center">
-                            <div id="lastCheckInName" class="text-3xl font-bold text-white mb-1 truncate">-</div>
-                            <div id="lastCheckInID" class="text-lg text-gray-400 font-mono mb-2 truncate">-</div>
-                            <p id="lastCheckInNote" class="text-xs text-gray-200 mb-3">-</p>
+                            <div id="lastCheckInName" class="text-2xl lg:text-3xl font-bold text-white mb-1 truncate">-</div>
+                            <div id="lastCheckInID" class="text-base lg:text-lg text-gray-200 font-mono mb-1 lg:mb-2 truncate">-</div>
+                            <p id="lastCheckInNote" class="text-xs text-gray-200 mb-2 lg:mb-3">-</p>
                             <p id="lastCheckInTime"
                                 class="px-2 py-1 rounded bg-white/5 text-xs text-gray-300 font-mono border border-white/5">
                                 -</p>
@@ -694,13 +695,14 @@
                         </div>
                     </div>
 
-                    <div class="glass p-6 rounded-2xl result-card flex flex-col justify-center min-h-[180px]">
-                        <!-- <div class="text-xs text-gray-500 uppercase tracking-wider mb-2"
-                            data-lang-key="lastCheckOutInfo">LATEST CHECK-OUT</div> -->
+                    <div id="lastCheckOutCard" class="glass p-4 lg:p-6 rounded-2xl result-card hidden lg:flex flex-col justify-center min-h-[120px] lg:min-h-[180px] fixed bottom-4 left-4 right-4 z-50 lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:z-auto shadow-2xl lg:shadow-none">
+                        <button type="button" title="關閉" onclick="closeLastScanCard('lastCheckOutCard')" class="absolute top-2 right-2 lg:hidden w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-colors z-10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                         <div class="flex-1 flex flex-col justify-center">
-                            <div id="lastCheckOutName" class="text-3xl font-bold text-white mb-1 truncate">-</div>
-                            <div id="lastCheckOutID" class="text-lg text-gray-400 font-mono mb-2 truncate">-</div>
-                            <p id="lastCheckOutNote" class="text-xs text-gray-200 mb-3">-</p>
+                            <div id="lastCheckOutName" class="text-2xl lg:text-3xl font-bold text-white mb-1 truncate">-</div>
+                            <div id="lastCheckOutID" class="text-base lg:text-lg text-gray-400 font-mono mb-1 lg:mb-2 truncate">-</div>
+                            <p id="lastCheckOutNote" class="text-xs text-gray-200 mb-2 lg:mb-3">-</p>
                             <p id="lastCheckOutTime"
                                 class="px-2 py-1 rounded bg-white/5 text-xs text-gray-300 font-mono border border-white/5">
                                 -</p>
@@ -799,6 +801,26 @@
             const savedLang = localStorage.getItem('quickRecordLang');
             setLanguage(savedLang && languages[savedLang] ? savedLang : 'zh-TW');
         }
+
+        // Handle responsive layout for result cards
+        function adjustResultCards() {
+            const isMobile = window.innerWidth < 1024;
+            ['checkIn', 'checkOut'].forEach(type => {
+                const cameraView = document.querySelector(`#${type}Page .camera-viewfinder`);
+                const rightPanel = document.querySelector(`#${type}Page .lg\\:col-span-5`);
+                const card = document.querySelector(`#${type}Page .result-card`);
+                const nextSiblingTabs = document.querySelector(`#${type}Page .rounded-2xl.flex-1.flex.flex-col.min-h-\\[200px\\]`);
+
+                if (isMobile && card && cameraView && card.parentElement !== cameraView) {
+                    card.classList.add('absolute', 'bottom-4', 'left-4', 'right-4', 'z-20', 'bg-black/40', 'backdrop-blur-xl', 'border', 'border-white/10');
+                    cameraView.appendChild(card);
+                } else if (!isMobile && card && rightPanel && card.parentElement !== rightPanel) {
+                    card.classList.remove('absolute', 'bottom-4', 'left-4', 'right-4', 'z-20', 'bg-black/40', 'backdrop-blur-xl', 'border', 'border-white/10');
+                    rightPanel.insertBefore(card, nextSiblingTabs);
+                }
+            });
+        }
+        window.addEventListener('resize', adjustResultCards);
 
         langSwitchBtn.addEventListener('click', () => {
             setLanguage(currentLang === 'zh-TW' ? 'en' : 'zh-TW');
@@ -1347,12 +1369,23 @@
             if (el) el.textContent = (languages[currentLang][key] || key) + (extra ? ` ${extra}` : '');
         }
 
+        function showLastScanCard(id) {
+            const card = document.getElementById(id);
+            if (card) card.style.display = 'flex';
+        }
+
+        function closeLastScanCard(id) {
+            const card = document.getElementById(id);
+            if (card) card.style.display = '';
+        }
+
         function updateCheckInDisplay(p) {
             if (!p) return;
             document.getElementById('lastCheckInName').textContent = getDisplayName(p.name);
             document.getElementById('lastCheckInID').textContent = getDisplayID(p.id);
             document.getElementById('lastCheckInNote').textContent = p.note || '-';
             document.getElementById('lastCheckInTime').textContent = p.checkInTime || '-';
+            showLastScanCard('lastScanCard');
         }
 
         function updateCheckOutDisplay(p) {
@@ -1361,6 +1394,7 @@
             document.getElementById('lastCheckOutID').textContent = getDisplayID(p.id);
             document.getElementById('lastCheckOutNote').textContent = p.note || '-';
             document.getElementById('lastCheckOutTime').textContent = p.checkOutTime || '-';
+            showLastScanCard('lastCheckOutCard');
         }
 
         function getDisplayName(name) {
@@ -1623,6 +1657,7 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             initializeLanguage();
+            adjustResultCards();
             try { db = await window.firebaseInitPromise; document.getElementById('enableFirebaseSync').disabled = !db; }
             catch (e) { showAlertModal(e.code?.includes('appCheck') ? 'reCAPTCHAfailed' : 'firebaseConnectError'); document.getElementById('enableFirebaseSync').disabled = true; }
 

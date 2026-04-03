@@ -270,6 +270,7 @@
                     idInput.value = decodeURIComponent(params.id);
                 } catch (e) { idInput.value = params.id; }
 
+                backToInputBtn.classList.add('hidden');
                 generateQRCode();
             }
         }
